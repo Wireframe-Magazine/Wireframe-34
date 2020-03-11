@@ -1,0 +1,244 @@
+
+
+
+ 
+;---------------------------------------
+cm_gamebyte	equ &7fd
+cm_flags	equ &7fe
+cm_powerup	equ &7ff
+smiley_lobank equ &c
+smiley_hibank equ &f
+
+	zvar cm_frames		,1
+	zvar control0		,1
+	zvar control1		,1
+	zvar interon		,1
+	zvar seed		,3
+	zvar pad		,1
+	zvar debounce		,1
+;	zvar tstatepausex		,1
+;	zvar tstatepausey		,1
+	zvar y.scroll		,1
+	zvar x.scroll		,1
+	zvar flyflag		,1
+	zvar vrampointer		,1
+	zvar bankno		,1
+	zvar spriteblockpointer	,1
+	var finishedloop		,1
+	zvar blockpointer		,1
+	zvar counter		,1
+;	zvar clock		,1	
+
+	zvar toplevvar1		,1
+	zvar toplevvar2		,1
+	zvar toplevvar3		,1
+	zvar toplevvar4		,1
+	zvar toplevvar5		,1
+	zvar toplevvar6		,1
+	zvar toplevvar7		,1
+	zvar toplevvar8		,1
+	zvar toplevvar9		,1
+	zvar toplevvar10		,1
+
+	zvar address		,2
+	zvar address1		,2
+	zvar address2		,2
+	zvar address3		,2
+	zvar address4		,2
+	zvar address5		,2
+	zvar address6		,2
+	zvar address7		,2
+	zvar address8		,2	
+	zvar address9		,2
+	zvar tempx		,1
+	zvar tempy		,1
+	zvar temp		,1
+	zvar temp1		,1
+	zvar temp2		,1
+	zvar temp3		,1
+	zvar temp4		,1
+	zvar temp5		,1
+	zvar temp6		,1
+	zvar temp7		,1
+	zvar temp8		,1
+	zvar temp9		,1
+ 
+;	zvar gamevar1	,1	;;variable space for each game
+;	zvar gamevar2	,1
+;	zvar gamevar3	,1
+;	zvar gamevar4	,1
+;	zvar gamevar5	,1
+;	zvar gamevar6	,1
+;	zvar gamevar7	,1
+;	zvar gamevar8	,1
+;	zvar gamevar9	,1
+;	zvar gamevar10	,1
+
+	zvar scrxl	,1
+	zvar scrxh	,1
+	zvar mapstrip	,1
+	zvar attripointer	,1
+	zvar blockattri	,1
+	var chrfound	,1
+	var blockfound	,1
+	var blockx	,1
+	var blocky	,1
+	var minmap	,1
+	var maxmap	,1
+	zvar mappointer	,2
+	zvar mapno	,1
+
+	var robindx	,1
+	var robinxl	,1
+	var robinxh	,1
+	var robiny	,1
+	var robinonscrx	,1
+	var leftright	,1
+	var oleftright	,1
+	var orobinxl	,1
+	var orobinxh	,1
+	var orobiny	,1	
+	var runcount	,1
+
+	var robindir	,1
+	var robinanim 	,1
+	var robinfiring     ,1
+	var robincrouch	,1
+	var robinheight	,1
+	var robinjumping	,1
+	var robingravity	,1
+	var robinlook	,1
+	var robinladder	,1
+	var robinladdercounter,1
+	var robininvinc	,1
+	var robinbehind	,1
+	var robinjustjumped	,1
+
+	var oldxl	,1
+	var oldxh	,1
+	var oldy	,1
+	var oldladder	,1
+	var killed	,1
+
+
+	var deadarrowx	,2
+	var deadarrowy	,1
+	var deadarrowcount	,1
+	var animatedoor	,1
+	var doorx	,1
+	var doory	,1
+
+	zvar solidfound	,1
+
+	var juststartedlife	,1
+	zvar pause	,1	;pause rou 
+	zvar dontpause	,1	;pause rou
+	zvar palversion	,1
+	var hipos	,1	;hiscore sorting
+	zvar scrolldir	,1
+
+	var ingame	,1
+	zvar lives	,1
+	zvar hearts	,1
+	zvar heartcounter	,1
+
+	zvar noofparas	,1
+	zvar extravarpointer,1
+
+	var treasures 	,6
+	var coinnum	,1
+;----------------------------------------------------
+resetvars	equ varlim
+	var coinnumx	,1
+	var coinnumy	,1
+	var coinnumcount	,1
+	var attributes	,7*8*2
+	var completedgame	,1
+
+noofextravars equ 128
+	var extravars	,noofextravars
+noofarrows	equ 8
+	var arrowxl	,noofarrows
+	var arrowxh	,noofarrows
+	var arrowy	,noofarrows
+	var arrowdir	,noofarrows
+	var arrowcanon	,noofarrows
+	var arrowcounter	,noofarrows
+noofspitters	equ 4
+	var spitterxl	,noofspitters
+	var spitterxh	,noofspitters
+	var spittery	,noofspitters
+	var spitterdir	,noofspitters
+
+noofbats	equ 4
+	var batxl	,noofbats
+	var batxh	,noofbats
+	var baty	,noofbats
+	var batxdir	,noofbats
+	var batydir	,noofbats
+	var batwingcount	,noofbats
+
+noofonscreens equ 16
+	var onscreenrou	,noofonscreens
+	var onscreenxl	,noofonscreens
+	var onscreenxh	,noofonscreens
+	var onscreeny	,noofonscreens
+	var onscreencount1	,noofonscreens
+	var onscreencount2	,noofonscreens
+
+	var heartstable	,48
+	var filledblockbuffer,1
+	var riseup	,1
+endofresetvars equ varlim
+;-----------------------------------------
+	
+	zvar fadecounter	,1
+	var fadecolours	,32
+	zvar fadetemp	,1
+	
+	zvar heartxl	,1
+	zvar heartxh	,1
+	zvar hearty	,1
+maxchangedblocks	equ 22	
+	var changedblocks	,3*maxchangedblocks
+	zvar changedblockspointer,1
+
+	var score		,7
+
+;	var test1,1
+;	var test2,1
+;	var test3,1
+
+
+;---------------------------------------------------------------
+_deltadem	equ $4011 ;Delta demodulator.
+_dmafunc	equ $4014 ;DMA function to transfer sprite data.
+_kpreg1	equ $4016 ;Keypad 1 register.
+_kpreg2	equ $4017 ;Keypad 2 register.
+
+;Video Processor Registers
+
+_control0	equ $2000 ;Control register 0.
+_control1	equ $2001 ;Control register 1.
+_statusreg	equ $2002 ;Status register.
+_spriteaddr	equ $2003 ;Sprite address set.
+_spritedata	equ $2004 ;Sprite data set.
+_scrollcon	equ $2005 ;Scroll control.
+_vramaddr	equ $2006 ;VRAM address register.
+_vramdata	equ $2007 ;VRAM data register.
+_bank	equ &fffe
+
+;Ordinary constants.
+spriteblock 	equ &0200
+vrambuffer	equ &0100	;same as stack ,but this works up
+normalvars	equ &0300  ;;;>&7ff
+blockbuffer	equ &170	;this leaves 112 for vrambuffer
+
+	
+;-----------------------------------------------------------------
+hiscoresinram	equ &7eD-17*10+1
+
+
+	org &8000
+
+

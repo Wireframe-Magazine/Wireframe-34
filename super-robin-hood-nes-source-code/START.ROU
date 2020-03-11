@@ -1,0 +1,157 @@
+
+
+
+start	sei
+ 	cld
+	ldx #&ff
+	txs
+	
+
+;	TAIWAN LOCK CHIP SOFTWARE
+
+num	equ	10
+dif	equ	$80
+
+	lda #num
+	sta $72
+	lda #>$065f+((num/2)*dif)
+	sta $70
+	lda #<$065f+((num/2)*dif)
+	sta $71
+
+ghfh	LDA #4
+	STA &7F0
+
+LOCK1	STA &FFF0
+	JSR LOCK2
+	STA &FFF1
+	JSR LOCK2
+	DEC &7F0
+	BNE LOCK1
+
+
+	lda $70
+	sub #dif
+	sta $70
+	bcs !1
+	dec $71
+	
+
+!1	dec $72
+	bne ghfh
+
+	STA &FFF0
+	JMP PASTLOCK
+
+LOCK2	LDX $70	;#&60
+	LDY $71	;#&06
+	bit $ff ;
+LOCK3	DEX
+	BNE LOCK3
+	DEY
+	BNE LOCK3
+	RTS
+
+PASTLOCK
+nops22	do 30
+	nop
+	loop
+	if absolutely=1
+	changebank 14
+	jsr smiley
+	changebank 12
+	endif
+pastnops
+	
+;--------------------------------
+	lda cm_powerup
+	pha
+	if absolutely=1
+	changebank 14
+	jsr cm_logo
+	changebank 12
+	endif
+	pla
+	tax
+;--------------------------------
+
+
+	ldy #0
+	sty _control0
+	sty _control1
+	sty address
+	sty address+1
+clearram	
+!2	lda #0
+!1	sta (address),Y
+	iny
+	bne !1
+!3	inc address+1
+	lda address+1
+	cmp #1
+	beq !3
+	cmp #07
+	bne !2
+
+
+	changebank 13
+	jsr copyhiscorestoram
+	changebank 12
+
+;-----------------------TEST FOR PAL VERSION
+;; palversion=1 if it is pal UK
+;	lda #0
+;	sta _control0
+;	sta _control1
+;palagain			;make sure this doesn't cross a page boundry
+;!1	ldx _statusreg
+;	bpl !1
+;	lda #0
+;	sta address
+;	sta address+1
+;testforpal	inc address
+;	bne !1
+;	inc address+1
+;!1	ldx _statusreg
+;	bpl testforpal
+;		;;;USA = 7*256+&bf = 1983
+;		;;;UK  = 8*256+&a6 = 2214
+;		;;;<2100=usa  >2100=uk
+;		;;;sometimes misses flyback and gives very big value
+;	add16toval address,-80,address
+;	lda address+1
+;	cmp #&9
+;	bcs palagain
+;	cmp #7
+;	bcc palagain
+;
+;	ldx #0
+;	lda address+1
+;	cmp #&8	
+;	bcc smaller_so_usa	
+;	ldx #255
+;smaller_so_usa
+;	stx palversion
+;
+;---------------------------------------------
+
+	lda #%10010000	
+	sta control0
+	sta _control0
+	sta seed
+	lda #%00011110
+	sta control1	
+	sta seed+1
+;	lda #0
+;	sta _control1
+	jsr turninteroff1
+	changebank 12
+
+	lda #10
+	jsr starttune
+
+
+;	jmp anewgame
+
+
+

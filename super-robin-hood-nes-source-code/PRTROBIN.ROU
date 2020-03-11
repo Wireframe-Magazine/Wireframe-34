@@ -1,0 +1,262 @@
+flashrobin	defb 4,2,2,2,2,2
+;------------------------
+printrobin	;dir 1=left  0=right   2=climbing
+	;anim 0-7  for running
+	;bow 0-15
+	;crouch  0=standing  1=half robincrouch   2=full robincrouch
+	lda killed
+	beq !1
+	rts
+!1
+	jsr checkrobinbehind
+	lda #0
+	sta spritecolour
+	lda robininvinc
+	beq printrobin1
+	dec robininvinc
+	lda robininvinc
+	cmp #150
+	bcc !2
+	rts
+!2	lsr
+	lsr
+	lsr
+	lsr
+	lsr
+	tax
+	lda flashrobin,x
+	and counter
+	bne printrobin1
+	lda #2
+	sta spritecolour
+
+printrobin1
+;legs
+	lda oleftright
+	pha
+	lda robinladder
+	beq !1
+	jmp printrobinonladder
+
+!1	lda robinxl
+	sec
+	sbc scrxl
+	tax
+	sta robinonscrx
+	sta address5
+	ldy robiny
+	sty temp9
+	lda robinanim
+	add #legsrunning
+	cmp #legsrunning-1
+	bne normalrun
+	lda #morelegs
+
+normalrun	sta address5+1
+	sta address7+1
+	stx address8
+	sty address8+1
+	ldx #morelegs+3
+	lda robincrouch		;robin crouching
+	beq workoutbody
+	cmp #-4
+	beq !1
+	cmp #-3
+	beq !1
+	cmp #-5
+	beq !1
+	dex
+	dex
+!1	stx address5+1
+	stx address7+1
+	cpx #morelegs+1
+	beq workoutbody
+	jsr subtrackheightofsprite
+	lda address5
+	tax
+	add #4
+	bit oleftright
+	bpl !2
+	sec
+	sbc #8
+!2	sta address5
+	lda #morelegs+2
+	sta address5+1
+	asl oleftright
+	jsr printspriteposrev
+	jmp workouthead
+	
+workoutbody	jsr subtrackheightofsprite
+
+	lda robinfiring
+	beq !3
+	jmp printrobinshooting
+!3
+	ldx address5
+	lda robinanim
+	bmi !2
+	and #7
+!2	add #robinbodies
+	cmp #robinbodies-1
+	bne !1
+	lda #robinbodies+8
+!1	sta address5+1
+	asl oleftright
+	jsr printspriteposrev
+        
+workouthead
+	jsr workoutheadrou
+
+nowprintlegs
+	lda address7+1
+	ldx address8
+	ldy address8+1
+	asl oleftright
+	jsr printspriteposrev
+	pla
+	sta oleftright
+	lda #0
+	sta spritebehind	
+	rts
+
+
+robpointtable defb 255,0,0
+robinlooktab	defb 0,0,0,0,1,0,0,2,3
+
+
+spriteheights	defb -15	;head0
+		defb -15	;head1
+		defb -15	;head2
+		defb -15	;head3
+		defb -7	;robinbody0
+		defb -7	;robinbody1
+		defb -7	;robinbody2
+		defb -7	;robinbody3
+		defb -7	;robinbody4
+		defb -7	;robinbody5
+		defb -7	;robinbody6
+		defb -7	;robinbody3
+		defb -7	;robinstanding
+		defb -7	;bodyfire0
+		defb -7	;bodyfire1
+		defb -7	;bodyfire2
+		defb -7	;bodyfire3
+		defb -15	;legsrunning0
+		defb -14	;legsrunning1
+		defb -15	;legsrunning2
+		defb -15	;legsrunning3
+		defb -15	;legsrunning4
+		defb -14	;legsrunning5
+		defb -15	;legsrunning6
+		defb -15	;legsrunning3
+		defb -15	;legsstanding
+		defb -10;12	;legshalfcrouch
+		defb -1 ;3	;bodyfullcrouch
+		defb -8	;legsfullcrouch
+		defb -11	;legsjumping
+		defb -10	;bodyonladder
+		defb -13	;legsonladder
+;------------------------------------------------------
+workoutheadrou
+	jsr subtrackheightofsprite
+	add #-14
+	sta robinheight
+	lda #robinheads
+!1	lda robinladder
+	bne !2
+	lda counter
+	add #1
+	and #31
+	bne !2	
+	lda seed
+	and #3
+	add robinlook
+	and #7
+	sta robinlook
+!2	ldx robinlook
+	lda robinlooktab,x
+	add #robinheads
+	ldx address5
+	sta address5+1
+	asl oleftright
+	jmp printspriteposrev
+;------------------------------------------------------
+printrobinonladder
+	ldy #8
+	ldx #0
+	lda robiny
+	and #8
+	beq !1
+	ldx #%01100000
+!1	lda pad
+	and #rmask
+	beq !2
+	ldy #4
+!2	lda pad
+	and #lmask
+	beq !3
+	ldy #4
+	txa
+	add #128
+	tax
+!3	stx oleftright
+	sty robinlook
+	lda robinxl
+	sec
+	sbc scrxl
+	tax
+	sta address5
+	ldy robiny
+	sty temp9
+	lda #morelegs+6
+	sta address5+1
+	sta address7+1
+	stx address8
+	sty address8+1
+
+	jsr subtrackheightofsprite
+
+	ldx address5
+	stx address6
+	sty address6+1
+	lda #morelegs+5
+	sta address5+1
+	sta address7
+
+	jsr workoutheadrou
+
+	ldx address6
+	ldy address6+1
+	lda address7
+	asl oleftright
+	jsr printspriteposrev
+
+	jmp nowprintlegs
+
+;------------------------------------------------------
+printrobinshooting
+	lsr
+	lsr
+	tax
+	lda shootingfrms,x
+	ldx address5
+!1	sta address5+1
+	asl oleftright
+	jsr printspriteposrev
+	lda #0
+	sta robinlook
+	jmp workouthead
+
+shootingfrms	defb bodyfiring+1,bodyfiring+2,bodyfiring+3,bodyfiring+4
+	defb bodyfiring+3,bodyfiring+3,bodyfiring+2,bodyfiring+2
+	defb bodyfiring+1,bodyfiring+1
+;-------------------------------------------------------
+subtrackheightofsprite
+	ldx address5+1
+	lda temp9
+	add spriteheights,x
+	sta temp9
+	tay
+	rts
+
+

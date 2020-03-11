@@ -1,0 +1,784 @@
+;-----------------------
+putextrason	lda #0
+	sta extravarpointer
+	lda mapno
+	asl
+	tax
+	lda maprouspointer,x
+	sta address9
+	lda maprouspointer+1,x
+	sta address9+1
+	
+anotherrou	ldy #0
+	lda (address9),y
+	asl
+	tax
+	lda routinepointers,x
+	sta address8
+	lda routinepointers+1,x
+	sta address8+1
+	iny
+	lda (address9),y
+	sta noofparas
+	iny
+	ldx extravarpointer
+	jmp (address8)
+backfromrou	add extravarpointer
+	sta extravarpointer
+backfromrounovars
+	lda noofparas
+	add address9
+	sta address9
+	bcc !1
+	inc address9+1
+!1	jmp anotherrou	
+
+endofrous	cpx #noofextravars
+	bcc !1
+	testcrash  ;for if too many ram vars used
+!1	rts
+
+maprouspointer
+	defw map1rous,map2rous,map3rous,map4rous,map5rous
+	defw map6rous,map7rous,map8rous,map9rous,map11rous
+	defw map12rous,map13rous,map14rous
+xendrous	equ 0
+xflashblock	equ 1
+xstandguard	equ 2
+xplatformh	equ 3
+xplatformv	equ 4
+xkey	equ 5
+xcanon	equ 6
+xsecret	equ 7
+xmarion	equ 8
+xwater	equ 9
+routinepointers defw endofrous,flashblock,standguard,platformh,platformv
+	defw keyrou,canonrou,secretrou,marionrou,redefinewaterbank
+
+;lastkey   =82    ;actually used
+;lastmoving=173   ;actually used
+;lastdoor  =239   ;actually used
+
+;use 168 next
+
+	;format rou,num params,params
+
+map1rous
+ defb xkey      ,6    ,21 ,37  ,4*16-8,249		;in thin passage
+ defb xcanon	   ,6        ,4,48,3,25			;top left corner
+ defb xplatformh,8    ,23 ,>45*16-4,<45*16-4 ,>51*16+4,<51*16+4,10*16-1 ;platform over lava
+ defb xkey      ,6    ,24 ,55  ,12*16-8,248		;in hole
+ defb xkey      ,6    ,31 ,62  ,8*16-8,32		;in little box
+ defb xflashblock,7    ,68   ,8+128 ,&1b  ,10,10		;left lowest	
+ defb xflashblock,7    ,67   ,6     ,&1b  ,10,10		;left	
+ defb xflashblock,7    ,59   ,8+128 ,&1b,8,8		;loner	
+ defb xstandguard,9    ,136,2 ,10*16,3,3+32+64,5,10	;guard on left side
+ defb xflashblock,7    ,11   ,9+128 ,&1b,12,6		;shot at by guard
+ defb xstandguard,10    ,137,55,10*16,-2,4+128,6,6,16	;guard by key
+ defb xstandguard,9    ,140,70,10*16,-2,2,8,8		;guard by flashing blocks
+ defb xsecret    ,6 ,67 ,1  ,9*16-8,10			;make ladder in wall
+ defb xwater	    ,2
+	defb 0
+map2rous	
+ defb xplatformh ,8 ,12 ,>92,<92 ,>13*16+4,<13*16+4,10*16-1 ;platform over lava
+ defb xflashblock,7    ,8   ,6+128 ,&fc,10,10		;left flashing brick	
+ defb xflashblock,7    ,9   ,6+128 ,&fd,10,10		;right flashing brick
+ defb xstandguard,11   ,134,14 ,4*16,2,3+32+128,5,5,5,15	;guard above lava
+ defb xstandguard,9    ,135,29 ,10*16,-2,3+32+64,5,10	;guard right bottom
+ defb xkey      ,6    ,13 ,13  ,2*16-8,251		;by guard above lava
+ defb xsecret    ,6 ,64 ,29  ,7*16-8,8			;make ladder
+ defb xwater	    ,2
+
+	defb 0
+map3rous
+ defb xkey       ,6   ,15 ,2  ,11*16-8,16		;above little blue room
+ defb xstandguard,9   ,138,2  ,9*16,2,2+32+64,3,10	;guard above key
+ defb xkey       ,6   ,66 ,10  ,12*16-8,23		;in little hole
+ defb xwater	    ,2
+	defb 0
+map4rous
+ defb xkey       ,6   ,19 ,3  ,5*16-8,20			;top left corner
+ defb xkey       ,6   ,25 ,3  ,11*16-8,247		;bottom left corner
+ defb xkey       ,6   ,26 ,23  ,5*16-8,246		;by chain
+ defb xkey       ,6   ,27 ,49  ,5*16-8,28		;last in map
+ defb xplatformh ,8   ,28 ,>56*16-4,<56*16-4,>60*16+4,<60*16+4,8*16-1 ;below chain
+ defb xplatformv ,8   ,32 ,>36*16-12,<36*16-12,0,192-8,96-1	;by drippers
+ defb xstandguard,9   ,145,18  ,12*16,2,5,3,10		;guard by water and ladder
+ defb xstandguard,9   ,146,27  ,6*16,-2,3,3,17		;guard by chain
+ defb xcanon	    ,6       ,30,4*16,3,11		;by lift
+ defb xstandguard,11   ,147,39  ,12*16,-2,4,4,4,8,14	;guard by chain
+ defb xwater	    ,2
+	defb 0
+map5rous
+ defb xkey       ,6 ,7 ,61  ,64+8,252			;1st key seen in room
+ defb xsecret    ,6 ,8 ,31  ,10*16-8,0			;makes block a ladder
+ defb xkey       ,6 ,9 ,31  ,10*16-8,0			;dummy key 4 above
+ defb xstandguard,8 ,133,4  ,4*16,2,5+64+128,20		;guard by shaft
+ defb xsecret    ,6 ,10 ,2  ,12*16-8,1			;bottom of shaft
+ defb xkey       ,6 ,11 ,2  ,12*16-8,12			;bottom of shaft
+ defb xkey       ,6 ,14 ,77 ,3*16-8,250			;above own door
+ defb xplatformv ,8 ,16 ,>83*16-4,<83*16-4,0,132,64-1	;above little blue room
+ defb xkey       ,6 ,17 ,120 ,7*16-8,239			;below skeleton
+ defb xplatformh ,8 ,20 ,>99*16-4,<99*16-4,>108*16+4,<108*16+4,11*16-1 ;over lava
+ defb xkey       ,6 ,29 ,190 ,8*16-8,30			;above table
+ defb xplatformv ,8 ,30 ,>202*16-4,<202*16-4,0,192+8,64-1	;right edge
+ defb xkey       ,6 ,33 ,176 ,4*16-8,245		;top right
+ defb xkey       ,6 ,34 ,154 ,7*16,35			;above door
+ defb xplatformh ,8 ,35 ,>144*16-4,<144*16-4,>149*16+4,<149*16+4,5*16-1 ;by barrel
+ defb xstandguard,8 ,139,81  ,4*16,2,3+64,13		;by moving ledge
+ defb xstandguard,9 ,141,67  ,7*16,2,3+64,4,10		;by 2 doors
+ defb xstandguard,10 ,142,89  ,13*16,2,2,4,4,12		;above blue room
+ defb xcanon	    ,7       ,132,6*16,-3,7,13		;shooting across chains
+ defb xstandguard,8 ,143,139  ,9*16,2,3,10		;above blue room
+ defb xflashblock,7    ,131   ,11+128 ,&cd,8,8		;further girder
+ defb xflashblock,7    ,132   ,11+128 ,&cd,8,8		;girder over lava
+ defb xsecret    ,6 ,144 ,189  ,4*16-8,7			;makes trap door
+ defb xstandguard,9 ,150,192  ,9*16,-2,2+128,5,12	;in little room
+ defb xsecret    ,6 ,74 ,45  ,11*16-8,15			;knock out ball n chain
+ defb xsecret    ,6 ,75 ,11  ,12*16-8,16			;makes ladder grow
+ defb xstandguard,9 ,172,202  ,13*16,-2,3+128,4,12		;in little room
+ defb xsecret    ,6 ,81 ,4  ,6*16-8,22			;makes cheat at begining
+ defb xwater	    ,2
+
+	defb 0
+
+map6rous
+ defb xkey       ,6 ,0 ,8  ,168,1  			;key on table
+ defb xplatformh ,8 ,1 ,>76 ,<76  ,>10*16+4,<10*16+4,6*16-1;1st platform
+ defb xkey	    ,6 ,2 ,3  ,88,255			;key to open 1st door
+ defb xkey	    ,6 ,3 ,38  ,152,4			;key to 2nd platform
+ defb xplatformh ,8 ,4 ,>796 ,<796  ,>914,<914,7*16-1	;2nd platform
+ defb xstandguard,9 ,128,3  ,10*16,2,1,14,5		;1st guard
+ defb xkey	    ,6 ,5 ,86  ,40,254			;key to 2nd door
+ defb xkey	    ,6 ,6 ,76  ,120,253			;key to 3rd door
+ defb xstandguard,8 ,129,33 ,13*16,-2,2+64+32+128,30	;2nd guard
+ defb xstandguard,8 ,130,68 ,6*16,-2,2+128,13		;guard above pillar
+ defb xstandguard,8 ,131,84 ,6*16,-2,2,20		;guard by curtains
+ defb xstandguard,9 ,132,78 ,9*16,1,3+64,15,20		;guard in passage
+ defb xstandguard,9 ,18,115,8*16,-2,1+64,5,20		;guard in hole
+ defb xkey	    ,6 ,22 ,99  ,64-8,0			;key by windows
+ defb xsecret    ,6 ,65 ,99  ,64-8,9			;open chain
+ defb xkey	    ,6 ,36 ,166 ,88,37			;on stool
+ defb xplatformv ,8 ,37 ,>173*16,<173*16,0,166,80-1	;under ladder
+ defb xcanon	    ,6       ,168,64,-4,9			;top right corner
+ defb xstandguard,10 ,148,140,9*16,2,3+128,5,5,20	;guard under door
+ defb xstandguard,9 ,158,95,10*16,2,2,5,20		;guard under windows
+ defb xsecret    ,6 ,68 ,93,8*16-8,11			;under windows
+ defb xsecret    ,6 ,73 ,23,2*16-8,14			;near start
+ defb xsecret    ,6 ,82 ,173  ,3*16-8,23			;makes barrel appear
+
+
+ defb 0
+map7rous
+ defb xkey	    ,6 ,38 ,149 ,200,39			;under own ledge
+ defb xplatformh ,8 ,39 ,>149*16-4,<149*16-4,>155*16+4,<155*16+4,7*16-1 ;above 3 spikes
+ defb xflashblock,7    ,171   ,9+128 ,&f8,20,20		;under ladder
+ defb xkey	    ,6 ,48 ,108  ,13*16-8 ,49		;below 2 knights
+ defb xkey	    ,6 ,52 ,10   ,11*16-8 ,53		;bottom left of map
+ defb xplatformh ,8 ,53 ,>43*16-4,<43*16-4,>52*16+4,<52*16+4,4*16-1 ;gap over arches
+ defb xkey	    ,6 ,54 ,73   ,3*16-8 ,241		;above glass window
+ defb xcanon	,6       ,113,6*16,3,10			;by stain glass
+ defb xstandguard,8 ,149,166,4*16,-2,2+128,13		;guard by ladder
+ defb xcanon	    ,6       ,71,6*16,3,24			;in wall
+ defb xstandguard,9 ,152,17,10*16,2,4,10,4		;by ropes
+ defb xstandguard,10 ,153,33,10*16,2,2,4,4,8		;in hole
+ defb xstandguard,11 ,154,14,13*16,-2,4,4,4,8,8		;by table
+ defb xstandguard,8 ,166,54,4*16,-2,2+128,12		;shooting across ledge
+ defb xsecret    ,6 ,76 ,29  ,10*16,17			;remove gargoyle
+ defb xsecret    ,6 ,77 ,68  ,4*16,18			;remove ball and chain
+ defb xstandguard,9 ,167,104,13*16,-2,1,7,14		;end of cooridoor
+; defb xstandguard,8 ,168,73,13*16,2,3+128,8		;guards treasure
+ defb xsecret    ,6 ,78 ,140  ,1*16+8,19			;grow ladder
+
+ defb 0
+map8rous
+ defb xsecret    ,6 ,40 ,144  ,13*16,2			;slide under ledge
+ defb xkey	    ,6 ,41 ,147  ,16*9-8 ,0			;top right by door
+ defb xsecret    ,6 ,43 ,147  ,16*9-8 ,3			;top right by door
+
+ defb xkey	    ,6 ,42 ,152  ,16*5-8 ,244		;top right of map
+ defb xflashblock,7    ,156   ,5+128 ,&fd,10,35		;right flashing brick
+ defb xflashblock,7    ,158   ,7+128 ,&fd,15,30		;right flashing brick
+ defb xflashblock,7    ,156   ,9+128 ,&fd,20,25		;right flashing brick
+ defb xflashblock,7    ,158   ,11+128,&fd,25,20		;right flashing brick
+ defb xkey	    ,6 ,46 ,104  ,12*16-8 ,0		;by bed for ladder
+ defb xsecret    ,6 ,47 ,104  ,12*16-8 ,5		;by bed for ladder
+ defb xplatformh ,8 ,49,>83*16-4,<83*16-4,>87*16+4,<87*16+4,8*16-1 ;below flashing blocks
+ defb xflashblock,7    ,85   ,4     ,&1b,10,10		;top left gap filler
+ defb xflashblock,7    ,88   ,4     ,&1b,10,10		;top right gap filler
+ defb xkey	    ,6 ,55 ,48  ,7*16-8 ,56			;in little hole
+ defb xplatformh ,8 ,56,>16*16-4,<16*16-4,>21*16+4,<21*16+4,4*16-1 ;1st ledge
+ defb xplatformh ,8 ,58,>24*16-4,<24*16-4,>28*16+4,<28*16+4,4*16-1 ;2nd ledge
+ defb xplatformh ,8 ,60,>37*16-4,<37*16-4,>44*16+4,<44*16+4,4*16-1 ;3rd ledge
+ defb xstandguard,9 ,151,150,5*16,2,3+128,20,25		;by flashing blocks
+ defb xcanon	    ,6       ,137,12*16,3,18		;shooting near secret
+ defb xstandguard,10 ,155,127,13*16,-2,3+128,3,3,10	;by bed
+ defb xcanon	    ,7       ,118,5*16,3,16,22		;shooting under pillars
+ defb xkey	    ,6 ,69 ,120  ,9*16-8 ,70		;for pillar ledge
+ defb xplatformh ,8 ,70,>122*16-4,<122*16-4,>131*16+4,<131*16+4,6*16-1 ;under pillar bit
+ defb xstandguard,10 ,162,60,13*16,-2,5,5,5,10		;by chest
+ defb xstandguard,11 ,163,68,7*16,-2,3+128,4,4,8,8	;under curtain
+ defb xstandguard,10 ,164,25,13*16,2,3+128,5,5,10	;by curtain high
+ defb xstandguard,9 ,165,18,13*16,2,5,10,10		;by curtain low
+ defb xsecret    ,6 ,72 ,22  ,6*16-8 ,13			;get imposible heart
+ defb xstandguard,10 ,169,3,7*16,2,5,4,3,8		;by bed
+ defb xstandguard,10 ,173,91,4*16,2,3,4,3,8		;by flashing
+ defb xsecret    ,6 ,80 ,149  ,2*16-8 ,21		;drop floor
+
+	defb 0
+map9rous
+ defb xkey	    ,6 ,57 ,30  ,12*16-8 ,58		;under gargoyle
+ defb xkey	    ,6 ,63 ,4  ,4*16-8 ,240			;on table
+ defb xstandguard,8 ,161,26,6*16,-2,4,12			;by pillar
+ defb xsecret    ,6 ,71 ,24  ,9*16-8 ,12			;move stool
+ defb xstandguard,12 ,170,10,13*16,-2,2+128,3,3,3,3,9	;by arches
+
+
+	defb 0
+map11rous
+ defb xkey	    ,6 ,44 ,4  ,16*3-8 ,0			;top of castle turret
+ defb xsecret    ,6 ,45 ,4  ,16*3-8 ,4			;top of castle turret
+ defb xstandguard,11 ,159,29,13*16,-2,4+128,3,3,7,7	;on right edge
+ defb xstandguard,8 ,160,12,9*16,2,2,7			;in middle
+ defb xsecret    ,6 ,79 ,28,2*16,20			;put block in front of guard
+
+	defb 0
+map12rous
+ defb xkey	    ,6 ,59 ,1  ,9*16-8 ,60			;on castle wall
+ defb xkey	    ,6 ,61 ,19 ,2*16-8 ,0			;very top
+ defb xsecret    ,6 ,62 ,19 ,2*16-8 ,6			;very top
+ defb xstandguard,8 ,171,10,13*16,-2,4,5			;impossible guard
+
+	defb 0
+map13rous
+ defb xkey	    ,6 ,50 ,29  ,16*6-8 ,243		;by glass window
+ defb xkey	    ,6 ,51 ,3  ,16*7-8 ,242			;top left corner
+ defb xstandguard,10 ,156,21 ,13*16,-2,4,4,4,12		;by ropes
+
+	defb 0
+map14rous
+ defb xmarion    ,5 ,0,14,3*16
+ defb xstandguard,8 ,157,2 ,13*16,2,5,9		;on last screen
+	defb 0
+
+
+noofextras	equ 255
+	var extrason,32
+	var secret,3+6+6
+;------------------------------
+doordata     ;format  map,x,y+height*16
+	defb 6-1,14,5+4*16		;255
+	defb 6-1,79,12+2*16		;254
+	defb 6-1,55,12+2*16		;253
+	defb 5-1,29,5+2*16		;252
+	defb 5-1,74,3+2*16		;251
+	defb 5-1,76,11+2*16		;250
+	defb 1-1,31,11+2*16		;249
+	defb 1-1,49,4+2*16		;248
+	defb 4-1,15,5+3*16		;247
+	defb 4-1,47,11+3*16		;246
+	defb 5-1,146,12+2*16	;245
+	defb 8-1,146,8+2*16		;244	
+	defb 8-1,74,12+3*16		;243
+	defb 13-2,17,12+4*16	;242
+	defb 7-1,97,12+4*16		;241
+	defb 13-2,23,3+2*16		;240
+	defb 6-1,128,12+1*16	;239
+
+endofdoordata
+noofdoors	equ ((endofdoordata-doordata)/3)+1
+
+
+;-----------------------------	
+resetextravars
+	lda #<resetvars
+	sta address+1
+	lda #0
+	sta address
+	ldy #>resetvars
+!1	sta (address),y
+	iny
+	bne !2
+	inc address+1
+!2	cpy #>endofresetvars
+	bne !1
+	ldx #<endofresetvars
+	cpx address+1
+	bne !1
+	rts
+;------------------------------
+resetextras	lda #255
+	ldx #(noofextras/8)+1
+!1	sta extrason,x
+	dex
+	bpl !1
+	lda #0
+	ldx #3+6+6-1
+!2	sta secret,x
+	dex
+	bpl !2
+	rts
+;--------------------------
+pickupcollision1
+	ldy #4
+	lda (address9),y
+	tay
+pickupcollision	;collision between robin and fruit using address8
+		;N.B.  CARRY CLEAR=COLLISION
+	bit robincrouch
+	bmi crouchcollide
+	sec
+	sbc robiny
+	add #32+2
+	cmp #40+2
+	bcs nopickcoll
+	bcc nowthex
+crouchcollide	
+	sec
+	sbc robiny
+	add #32+8-16
+	cmp #40+8-16
+	bcs nopickcoll
+nowthex	lda address8
+	sec
+	sbc robinonscrx
+	add #12
+	cmp #24
+nopickcoll	rts
+;-----------------------------
+bitpattern	defb 128,64,32,16,8,4,2,1
+checkifextraon
+	lda (address9),y
+checkifdooron
+	tay
+	and #7
+	tax
+	tya
+	lsr
+	lsr
+	lsr
+	tay
+	lda extrason,y
+	and bitpattern,x
+	rts
+;----------------------------
+turnoffextra	ldy #2
+	lda (address9),y
+turnoffdoor	tay
+	and #7
+	tax
+	tya
+	lsr
+	lsr
+	lsr
+	tay
+	lda extrason,y
+	eor bitpattern,x
+	sta extrason,y
+	rts
+;-----------------------------
+checkonscreensides ;bcs not on main screen or on either side screens
+	ldy #3
+checkonscreensides1
+	lda (address9),y
+	sec
+	sbc scrxl
+	sta address7
+	iny
+	lda (address9),y
+	sbc scrxh
+	sta xcoordh
+	add #1
+	cmp #3
+	rts
+;--------------------
+htempy	equ temp1
+htempx	equ temp2
+yminus	equ temp3
+htempchr	equ temp4
+htempprtx	equ temp5
+htempprty	equ temp6
+htempangle	equ temp7
+htempcol	equ temp8
+htempsize	equ temp9
+xminus 	equ address5+1
+noofhparas	equ address7
+htemprou	equ address6
+htempxreg	equ address6+1
+
+;new format xl,xh,y,chr,col*16+numofpars,flags+rou,0,0,0,0,0,0,0,0,0,0 ;16 in all
+	;flags  128=keep coord on robin
+	;	64 =add gravity
+
+
+startstarstable
+ defb 1,0,0,&8c,3*16+3,128+0,4  ,0,16 ,16,4,0,0,0,0,0   ;small robin explosion 
+ defb 1,0,0,&8c,3*16+5,128+1,0  ,0,4  ,26,8,13,4,19,0,6 ;large robin explosion
+ defb 1,0,0,&8c,3*16+2,128+3,252,0,252,16,0,0,0,0,0,0   ;spin in stars at start
+ defb 1,0,0,&9a,1*16+1,    4,4  ,16,0 ,0,0,0,0,0,0,0    ;key exploding
+ defb 1,0,0,&97,2*16+3,    5,4  ,0,4  ,16,4,0,0,0,0,0   ;small guard explosion
+ defb 1,0,0,&97,2*16+5,    6,4  ,0,4  ,26,4,13,4,19,4,6 ;large guard explosion
+ defb 1,0,0,&96,1*16+1,    4,4  ,16,0 ,0,0,0,0,0,0,0    ;treasure exploding
+ defb 1,0,0,&8c,3*16+1,    4,4  ,16,0 ,0,0,0,0,0,0,0    ;hearts exploding
+
+;----------------------------------
+startstars	sta temp2
+	ldx #0
+	lda heartstable,x
+	beq gotstarsx
+	ldx #16
+	lda heartstable,x
+	beq gotstarsx	
+	ldx #32
+	lda heartstable,x
+	beq gotstarsx
+	ldx #0
+gotstarsx	stx temp1
+	lda temp2
+	asl
+	asl
+	asl
+	asl
+	tay
+	lda #16
+	sta temp2
+!2	lda startstarstable,y
+	sta heartstable,x
+	iny
+	inx
+	dec temp2
+	bne !2
+	ldx temp1
+	lda address8+1
+	sta heartstable+2,x
+	lda address7
+	sta heartstable+0,x
+	lda address7+1
+	sta heartstable+1,x
+	rts
+;----------------------------------
+
+;-------------------	
+doorrou	lda animatedoor
+	beq enddoor
+	and #7
+	bne donedoor
+	lda #doorliftingfx
+	jsr soundfx
+	lda animatedoor
+	cmp #8
+	beq finishdoor
+	and #15
+	beq overboundry
+	ldx doorx
+	ldy doory
+	lda #&01
+	jsr addachangedblock
+	jmp donedoor
+overboundry	
+	ldx doorx
+	ldy doory
+	dey
+	lda #&2
+	jsr addachangedblock
+finishdoor
+	ldx doorx
+	ldy doory
+	jsr deleteachangedblock
+	dec doory
+donedoor	dec animatedoor
+enddoor	rts
+;---------------------------------------------------
+closedoor	ldx doorx
+	ldy doory
+	lda #2
+	jsr addachangedblock
+	dec doory
+!2	ldx doorx
+	ldy doory
+	lda #&03
+	jsr addachangedblock
+	dec doory
+	lda animatedoor
+	add #-16
+	sta animatedoor
+	cmp #8
+	bne !2
+!1	rts
+;---------------------------------------------------
+openadoor	;a=number of door to open
+	sta temp
+	jsr turnoffdoor
+openadoor1
+	lda #255
+	sec
+	sbc temp
+	sta temp1
+	asl
+	add temp1
+	tax
+
+	lda doordata,x
+	cmp mapno
+	bne !1
+	lda doordata+2,x
+	and #15
+	sta doory
+	lda doordata+2,x
+	and #%11110000
+	add #8
+	sta animatedoor
+	lda doordata+1,x
+	sta doorx
+	lda #0
+!1	rts
+;---------------------------------------------------
+resetdoorsintomap
+	lda #255
+!1	sta temp
+	jsr checkifdooron
+	beq !2
+	jsr openadoor1
+	bne !2
+!3	lda temp
+	pha
+	jsr closedoor
+	pla
+	sta temp
+!2	dec temp
+	lda temp
+	cmp #255-noofdoors
+	bne !1
+	rts	
+;---------------------------
+;1st is always robins arrow, the rest are enemies
+robinshootarrow
+	lda robinxl
+	sta arrowxl
+	lda robinxh
+	sta arrowxh
+	lda robiny
+	add #-24
+	sta arrowy
+	ldx #4
+	lda oleftright
+	bpl !1
+	ldx #-4
+	lda arrowxl
+	sec
+	sbc #8
+	sta arrowxl
+	bcs !1
+	dec arrowxh
+!1	stx arrowdir
+	lda #40
+	sta arrowcounter
+	rts
+
+;-----------------------------------------------
+shootarrow	;(address9),y  points at >x,<x,y,dir
+
+	sta temp
+	ldx #1
+!1	lda arrowcounter,x
+	beq gotarrowpos
+	inx
+	cpx #noofarrows
+	bne !1
+	rts
+gotarrowpos	
+	lda (address9),y
+	ldy #0
+	sta arrowdir,x
+	cmp #0
+	bpl !1
+	ldy #255
+!1	lda #100
+	sta arrowcounter,x
+	lda #0
+	sta arrowcanon,x
+
+	lda arrowdir,x
+	asl
+	asl
+	add address7
+	sta arrowxl,x
+	tya
+	adc address7+1
+	sta arrowxh,x
+	lda temp
+	sta arrowy,x
+
+	rts
+;----------------------------
+addarrowdir	lda arrowdir,x
+	bpl !3
+	lda arrowxl,x
+	add arrowdir,x
+	sta arrowxl,x
+	bcs !4
+	dec arrowxh,x
+!4	jmp !5
+!3	lda arrowxl,x
+	add arrowdir,x
+	sta arrowxl,x
+	bcc !5
+	inc arrowxh,x
+!5	rts
+;----------------------------
+updatearrows	ldx #0
+doeacharrow	lda arrowcounter,x
+	beq !2
+	bpl !1	
+!2	jmp nextarrow
+!1	dec arrowcounter,x
+;	bne contarrow
+;	jmp nextarrow
+contarrow	
+	jsr addarrowdir
+
+
+printarrow	stx tempx
+	lda arrowxh,x
+	sta temp
+	lda arrowxl,x
+	add #4
+	bcc !2
+	inc temp
+!2	ldy arrowy,x
+	iny
+	iny
+	iny
+	iny
+	iny
+	iny
+	ldx temp
+	jsr findsolid
+	cmp #3
+	bne arrownothitwall
+		;arrow hit wall
+takearrowoff
+	lda #arrowhitwallfx
+	jsr soundfx
+takearrowoff1
+	ldx tempx
+	jsr takearrowoffrou
+	jmp nextarrow
+
+arrownothitwall
+	ldx tempx
+	lda arrowxl,x
+	sec
+	sbc scrxl
+	sta tempy
+	lda arrowxh,x
+	sbc scrxh
+	bne nextarrow
+	lda arrowdir,x
+	and #%01000000
+	eor arrowcanon,x
+	sta temp
+	lda arrowy,x
+	add #ydisplace
+	tay
+	lda arrowcanon,x
+	beq isanarrow
+	lda #&96-&79
+isanarrow	add #&79
+	ldx tempy
+	jsr pokesprite
+	ldx tempx
+	beq nextarrow		;now check collision with robin
+	lda arrowy,x
+	add #6		;slight bodge to make them easiler to jump over
+	sec
+	sbc robiny
+	bcs arrownothitrobin
+	lda arrowy,x
+	add #2
+	sec
+	sbc robinheight
+	bcc arrownothitrobin
+	
+	lda tempy
+	sec
+	sbc robinonscrx
+	add #12
+	cmp #24
+	bcs arrownothitrobin
+	lda robininvinc
+	bne arrownothitrobin
+	lda #1
+	jsr subfromhearts		;arrow has hit robin
+	jmp takearrowoff1
+arrownothitrobin
+
+
+nextarrow	inx
+	cpx #noofarrows
+	beq !1
+	jmp doeacharrow
+!1	
+	lda deadarrowcount
+	beq !2
+	dec deadarrowcount
+	lda deadarrowx
+	sec
+	sbc scrxl
+	tax
+	lda deadarrowx+1
+	sbc scrxh
+	sta xcoordh
+	ldy deadarrowy
+	lda deadarrowcount
+	lsr
+	add #deadarrows
+	jsr winprintsprite
+
+!2	rts
+;-----------------------------------
+takearrowoffrou
+	lda arrowxl,x	
+	sta deadarrowx
+	lda arrowxh,x	
+	sta deadarrowx+1
+	lda arrowy,x	
+	sta deadarrowy
+	lda #8	
+	sta deadarrowcount
+	lda #0
+	sta arrowy,x
+	sta arrowcounter,x
+	rts
+;---------------------------------
+dectiming	ldx extravarpointer
+	lda extravars,x
+	beq dotimingproblem
+	lda counter
+	and #7
+	bne !1	
+	dec extravars,x
+!1	rts
+dotimingproblem	;enter with a=number of paras through data,start of times
+	tya
+ 	eor #255
+	add noofparas
+	sta temp
+	ldx extravarpointer
+	inc extravars+1,x
+	lda extravars+1,x
+	cmp temp
+	bne !1
+	lda #0
+	sta extravars+1,x
+!1	sta temp
+	inc temp
+!2	iny
+	dec temp
+	bne !2
+	lda (address9),y
+	sta extravars,x
+	rts
+;--------------------------------------
+
+

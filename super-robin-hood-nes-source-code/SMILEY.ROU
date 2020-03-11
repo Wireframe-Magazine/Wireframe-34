@@ -1,0 +1,452 @@
+
+
+*************************************************************
+
+; SMILEY self-test code
+; by Jon Menzies and Gavin Raeburn 3-10-90
+; or
+; by Gavin Raeburn and Jon Menzies 3-10-90
+
+SMILEY
+
+;define zero page chars used
+
+!TEST_BYTE	EQU $13
+!BANK	EQU $14
+!PAGE	EQU $15
+!PAD1	EQU $16
+!BANK_ON	EQU $17
+!FACE_MASK	EQU $18
+
+	LDX #$20
+!1	LDA !ROM_CHECK-$20,X
+	STA $0,X
+
+	INX
+	BNE !1
+
+	STX $2000
+	STX $2001
+
+;read keypad
+
+	JSR !KEYPAD
+	STY !TEST_BYTE
+
+	LDA !PAD1
+	AND #%10111111
+	CMP #%10111111
+	BNE !NEXT_TEST
+
+;set no. of banks to check
+
+	LDA #15
+	STA !BANK
+
+;test 1 - ROM check
+
+	LDA !SMILEY_BANK
+	STA !BANK_ON
+
+	JSR $20
+
+!NEXT_TEST	LDA !PAD1
+	AND #%01111111
+	CMP #%01111111
+	BNE !NO_EQ
+
+	JSR !TEST_2
+
+!NO_EQ	LDA !TEST_BYTE
+	BEQ !EXIT
+
+	AND #4+8
+	BNE !FAILED
+
+	JMP !GOOD_FACE
+
+!FAILED	JMP !BAD_FACE
+
+!EXIT	RTS
+
+
+
+;test 2 - Char RAM test
+
+
+;write to video ram
+
+!TEST_2
+	JSR !TEST2_SET
+
+!TEST1A	LDY #64
+
+!TEST1B	STX $2007
+	INX
+	STX $2007
+	INX
+	STX $2007
+	INX
+	STX $2007
+	INX
+
+	DEY
+	BNE !TEST1B
+	INX
+
+	SEC
+	SBC #1
+	BNE !TEST1A
+
+
+;read video ram
+
+	JSR !TEST2_SET
+
+	LDY $2007
+
+!TEST2A	LDY #64
+
+!TEST2B	CPX $2007
+	BNE !CRAM_FAIL
+	INX
+	CPX $2007
+	BNE !CRAM_FAIL
+	INX
+	CPX $2007
+	BNE !CRAM_FAIL
+	INX
+	CPX $2007
+	BNE !CRAM_FAIL
+	INX
+
+	DEY
+	BNE !TEST2B
+	INX
+
+	SEC
+	SBC #1
+	BNE !TEST2A
+
+
+
+;write to video ram with
+;complement value
+
+	JSR !TEST2_SET
+	LDX #255-37
+
+!TEST3A	LDY #64
+
+!TEST3B	STX $2007
+	DEX
+	STX $2007
+	DEX
+	STX $2007
+	DEX
+	STX $2007
+	DEX
+
+	DEY
+	BNE !TEST3B
+	DEX
+
+	SEC
+	SBC #1
+	BNE !TEST3A
+
+
+
+;read video ram again
+
+	JSR !TEST2_SET
+	LDX #255-37
+
+	LDY $2007
+
+!TEST4A	LDY #64
+
+!TEST4B	CPX $2007
+	BNE !CRAM_FAIL
+	DEX
+	CPX $2007
+	BNE !CRAM_FAIL
+	DEX
+	CPX $2007
+	BNE !CRAM_FAIL
+	DEX
+	CPX $2007
+	BNE !CRAM_FAIL
+	DEX
+
+	DEY
+	BNE !TEST4B
+	DEX
+
+	SEC
+	SBC #1
+	BNE !TEST4A
+
+	LDA #2
+	BNE !STORE_IT
+
+!CRAM_FAIL	LDA #8
+
+!STORE_IT	ORA !TEST_BYTE
+	STA !TEST_BYTE
+	RTS
+
+!TEST2_SET
+	LDA #$20
+	LDX #37
+	LDY #0
+	STY $2006
+	STY $2006
+	RTS
+
+
+
+!KEYPAD	LDX #1
+	STX $4016
+	DEX
+	STX $4016
+
+	LDY #8
+!PAD	LDA $4016
+	LSR
+	ROL !PAD1
+	DEY
+	BNE !PAD
+	RTS
+
+***********************************************************************
+
+;ROM check relocating code
+
+!ROM_CHECK
+	ORG *,$20
+
+;init y
+	LDY #0
+
+!HERE2
+
+;setbank to be checked
+
+	LDA !BANK
+	JSR !SET_BANK
+
+;set up pointers + loop values
+
+	LDA #$40/4
+	STA !PAGE
+
+	LDA #$80	; BANK POINTERS
+	DB $85,!HERE+2	; STA !HERE+2
+	LDA #$90
+	DB $85,!HEREA+2
+	LDA #$A0
+	DB $85,!HEREB+2
+	LDA #$B0
+	DB $85,!HEREC+2
+
+	LDX #0
+	TXA
+
+	CLC
+
+!HERE	ADC $8000,X
+	BCC !HEREA
+	INY
+	CLC
+
+!HEREA	ADC $9000,X
+	BCC !HEREB
+	INY
+	CLC
+
+!HEREB	ADC $A000,X
+	BCC !HEREC
+	INY
+	CLC
+
+!HEREC	ADC $B000,X
+	BCC !HERED
+	INY
+	CLC
+
+!HERED	INX
+	BNE !HERE
+
+	INC !HERE+2
+	INC !HEREA+2
+	INC !HEREB+2
+	INC !HEREC+2
+
+;loop until bank done
+
+	DEC !PAGE
+	BNE !HERE
+
+	LDX !BANK
+	CMP !SMILEY_NAME,X
+	BNE !FAIL_IT
+
+	DEC !BANK
+	BPL !HERE2
+
+	LDA #1
+
+	CPY !SMILEY_NAME+16
+	BEQ !TEST2_BALLS
+
+!FAIL_IT	LDA #4
+
+!TEST2_BALLS	STA !TEST_BYTE
+
+	LDA !BANK_ON
+
+!SET_BANK	;called from earlier on
+	TAX
+	STA BANK_TABLE,X
+	RTS
+
+!SMILEY_NAME
+!0	DB "* SMILEY TEST V1.1 "
+
+	IF *-!0 <> 19
+	ERROR "SMILEY TEXT MUST BE 19 BYTES LONG..."
+	ENDIF
+
+!SMILEY_BANK	= *-1
+
+*************************************************************
+
+
+*************************************************************
+
+	ORG *,*
+	ORG *
+
+!GOOD_FACE	LDX #$55
+	LDA #$1A	;green=good
+	BNE !SHOW_FACE
+
+!BAD_FACE	LDX #$AA
+	LDA #$16	;red=bad
+
+
+!SHOW_FACE
+	;A=bg col, X= $55 or $aa
+
+	STX !FACE_MASK
+
+	LDX !TEST_BYTE
+	STX $4400
+
+;set palette colours
+	LDY #$00
+	STY $2001
+
+	LDX #$3F
+	STX $2006
+	STY $2006
+
+	JSR !STORE
+
+	ORA #$30
+	JSR !STORE
+
+	JSR !STORE
+
+	;assume Y=0...
+
+;download 1 solid character
+
+	STY $2006
+	STY $2006
+
+	LDX #16
+	DEY
+!1Q	STY $2007
+	DEX
+	BNE !1Q
+
+;print face
+	LDA #$20
+	STA $2006
+	STX $2006
+
+	TXA
+	LDY #4
+
+!L1	STA $2007
+	INX
+	BNE !L1
+	DEY
+	BNE !L1
+
+
+	LDA #$23
+	STA $2006
+	LDA #$C8
+	STA $2006
+
+	LDY #0
+!L2	LDA !FACE_DATA,Y
+	AND !FACE_MASK
+	STA $2007
+	INY
+	CPY #48
+	BCC !L2
+
+;screen on, sprites off etc.
+	LDX #$00
+	STX $2000
+	STX $2006
+	STX $2006
+	STX $2005
+	STX $2005
+
+	LDA #$0E
+	STA $2001
+
+
+	;assume X=0...
+
+;wait a few seconds
+	LDY #10
+!WAIT	DEC TEMP1
+	BNE !WAIT
+	DEX
+	BNE !WAIT
+	DEY
+	BNE !WAIT
+
+;screen off
+	STY $2001
+
+;it's a wrap!
+	RTS
+
+
+
+
+!STORE 	STA $2007
+	STA $2007
+	STA $2007
+	STA $2007
+	RTS
+
+!FACE_DATA	HEX 00C0FCFFFFF00000
+	HEX 40FF87FFB7CF7300
+	HEX 44FFFEB7FFFE7700
+	HEX 44FF07F535CF7700
+	HEX 00CFF9FAFAFD0300
+	HEX 00000F0F0F030000
+
+*************************************************************
+
+
+
+

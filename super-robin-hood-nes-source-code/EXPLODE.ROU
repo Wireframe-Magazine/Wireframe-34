@@ -1,0 +1,284 @@
+robinhearts	lda robiny
+	add #-18
+	sta heartstable+2,x
+	lda robinxl
+	sec
+	sbc #4
+	sta heartstable+0,x
+	lda robinxh
+	sbc #0
+	sta heartstable+1,x
+	rts
+;-----------------------------------
+updatehearts
+	ldx #0
+morehearts	stx htempxreg
+	lda heartstable,x
+	ora heartstable+1,x
+	beq endhearts
+updateheartslp
+	lda heartstable+5,x
+	bpl !1
+	jsr robinhearts
+!1	lda heartstable,x
+	sec
+	sbc scrxl
+	sta heartxl	
+	lda heartstable+1,x
+	sbc scrxh
+	sta heartxh
+	lda heartstable+2,x
+	sta hearty
+	lda heartstable+3,x
+	sta htempchr
+	lda heartstable+4,x
+	lsr
+	lsr
+	lsr
+	lsr
+	sta htempcol	
+	lda heartstable+4,x
+	and #15
+	sta noofhparas
+	lda heartstable+5,x
+	and #31
+	sta htemprou
+	
+doeachheart	
+	ldy htemprou
+	lda exploderoubitsl,y
+	sta address
+	lda exploderoubitsh,y
+	sta address+1
+	jmp (address)
+
+backfromheartrou
+!1	jsr printcircleofhearts
+backfromheartrou1
+	inx
+	inx
+	dec noofhparas
+	bne doeachheart
+endhearts	lda htempxreg
+	add #16
+	tax
+	cmp #48	
+	bne morehearts
+	rts
+
+;----------------------------------
+spinandinc	dec heartstable+7,x     ;rotate	;routine 2
+justinc	jsr inchearts4			;routine 4
+finhearts1	bne backfromheartrou
+finhearts	ldy htempxreg
+	lda #0
+	sta heartstable,y
+	sta heartstable+1,y
+	jmp backfromheartrou1
+;---------------------------------
+largeexpforguard				;routine 6
+	jsr inchearts4
+	bpl backfromheartrou
+	bmi finhearts
+;--------------------------------
+smallexpforguard				;routine 5
+	jsr inchearts3
+	lda heartstable+6,x
+	cmp #64
+	bcc backfromheartrou
+	bcs finhearts
+;----------------------------------
+explodehearts				;routine 1
+	ldy noofhparas
+	lda expsizetable,y
+	add heartstable+6,x	    ;size
+	sta heartstable+6,x
+	bcc backfromheartrou
+	bcs finhearts
+expsizetable defb 1,2,3,4,5,6
+;----------------------------------
+spininstars	dec heartstable+7,x			;routine 3
+	lda heartstable+6,x
+	add #-6
+	sta heartstable+6,x
+	jmp finhearts1
+;----------------------------------
+explodeheartsl				;routine 0
+	dec heartstable+7,x     ;rotate
+	ldy noofhparas
+	lda robininvinc
+	cmp #170-50
+	bcc !1
+	lda expsizetable,y
+	add heartstable+6,x	    ;size
+	sta heartstable+6,x
+	jmp backfromheartrou
+!1	lda heartstable+6,x	    ;size
+	sec
+	sbc expsizetable,y
+	sta heartstable+6,x
+	bmi finhearts
+	jmp backfromheartrou
+;------------------------------------
+inchearts4	inc heartstable+6,x		;size
+inchearts3	inc heartstable+6,x
+inchearts2	inc heartstable+6,x
+inchearts1	inc heartstable+6,x
+	rts
+;------------------------------------
+getvalue	;value a=angle
+	and #63
+	tay
+	lda sincostable,y
+	bit htempangle
+	bvc waspos
+	jsr waspos
+	nega
+	dey
+	rts
+waspos	sta temp
+	lda htempsize
+	sta address
+	ldy #8
+	lda #0
+	sta address+1
+	sta address1
+	sta address1+1
+multlp	lsr temp
+	bcc noadd
+	add16to16 address1,address,address1
+noadd	asl address
+	rol address+1
+	dey
+	bne multlp
+	lda address1+1
+	rts
+;-------------------
+putspinheart
+	lda htempprty
+	sta spriteblock+0,y
+	lda htempchr
+	sta spriteblock+1,y
+	lda htempcol
+	sta spriteblock+2,y
+	iny
+	iny
+	iny
+	iny
+	rts
+;-------------------
+printcircleofhearts
+	lda heartstable+6,x
+	sta htempsize
+	lda heartstable+7,x
+	and #127
+	sta htempangle
+	jsr getvalue
+	sty xminus
+	asl
+	sta htempx
+	
+	lda htempangle
+	add #32
+	and #127
+	sta htempangle
+	jsr getvalue
+	sty yminus
+	asl
+	sta htempy
+	ldy spriteblockpointer
+	bne !29
+	rts
+!29
+
+;-----	     ;bottom right corner of non-rotating 
+
+	lda heartxl
+	add htempx
+	sta spriteblock+3,y	;htempprtx
+	lda heartxh
+	adc xminus
+	bne !1
+
+	lda hearty
+	add htempy
+	sta htempprty
+	lda #0
+	adc yminus
+	bne !1
+
+	jsr putspinheart
+	beq nomorehearts
+!1	
+;-----		;top right of non-rotating
+	lda heartxl
+	add htempy
+	sta spriteblock+3,y	;htempprtx
+	lda heartxh
+	adc yminus
+	bne !2
+
+	lda hearty
+	sec
+	sbc htempx
+	sta htempprty
+	lda #0
+	sbc xminus
+	bne !2
+
+	jsr putspinheart
+	beq nomorehearts
+!2
+;--------		;bottom left of non-rotating
+	lda heartxl
+	sec
+	sbc htempy
+	sta spriteblock+3,y	;htempprtx
+	lda heartxh
+	sbc yminus
+	bne !3
+
+	lda hearty
+	add htempx
+	sta htempprty
+	lda #0
+	adc xminus
+	bne !3
+
+	jsr putspinheart
+	beq nomorehearts
+!3	
+;-----		;top left of non-rotating
+	lda heartxl
+	sec	
+	sbc htempx
+	sta spriteblock+3,y	;htempprtx
+	lda heartxh
+	sbc xminus
+	bne !4
+
+	lda hearty
+	sec
+	sbc htempy
+	sta htempprty
+	lda #0
+	sbc yminus
+	bne !4
+	jsr putspinheart
+!4
+nomorehearts	sty spriteblockpointer
+	rts
+;-------------------
+sincostable	db 0 ,3 ,6 ,9 ,12,15,18,21,24,27,30,33,36,38,41,43
+	db 45,47,49,51,53,55,56,58,59,60,61,62,62,63,63,64,64
+	db 64,63,63,62,62,61,60,59,58,56,55,53,51,49,47,45
+	db 43,41,38,36,33,30,27,24,21,18,15,12,9 ,6 ,3 ,0
+;------------
+
+exploderoubitsl defb >explodeheartsl,>explodehearts,>spinandinc
+	defb >spininstars,>justinc,>smallexpforguard,>largeexpforguard
+exploderoubitsh defb <explodeheartsl,<explodehearts,<spinandinc
+	defb <spininstars,<justinc,<smallexpforguard,<largeexpforguard
+
+
+

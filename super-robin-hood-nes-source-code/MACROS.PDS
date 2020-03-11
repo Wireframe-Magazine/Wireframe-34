@@ -1,0 +1,732 @@
+
+;TO RUN
+;JUST ASSEMBLE AND TYPE  G0 FROM MONITOR 
+
+CHECKPDS	EQU $FFF2
+BREAKPOINT	EQU $FFED
+ANALYZE	EQU $FFE4
+	send computer1
+
+absolutely	equ 1
+title	equ 1
+hiscore	equ 1
+musicon	equ 1
+
+testpause	equ 0
+startlevel	equ 5
+analyzeon	equ 0
+master	equ 1
+showcoins	equ 0
+
+ydisplace	equ 12
+	path c:\nes\robin
+
+zvar	macro
+@1	equ zlim
+zlim	= zlim+@2
+	if zlim>&ff
+	ERROR "Out of zero page work space with variable @1
+	endif
+	endm
+zlim	= &0
+
+
+var	macro
+@1	equ varlim
+varlim	= varlim+@2
+	if varlim>&743
+	ERROR "Out of var page work space with variable @1
+	endif
+	endm
+
+varlim	= &300
+
+;---------------------------------------------------------------
+defspr	macro
+	if (@1&32)
+	db @1,(@2)*((@1&64~64)/32-1),(@3)*((@1&128~128)/64-1),@4
+	ifs [@5] []
+	else
+	db @5
+	endif
+	else
+	db @1,@2
+	ifs [@3] []
+	else
+	db @3
+	endif
+	endif
+	endm
+
+sprvar	macro
+@1	equ (*-spritetable)/2
+	endm
+;---------------------------------------------------------------
+chrvar	macro
+@1	equ (*-setsofchrstable)/5
+	endm
+;----------------------------------------------------------------
+compchr	macro
+@1	equ (*-compactedchrstable)/4
+	endm
+;----------------------------------------------------------------
+waitforsprcol	macro   ;waits for sprite collision with sprite & char
+!2	bit _statusreg
+	bvs !2
+!1	bit _statusreg
+	bvc !1
+	endm
+;---------------------------------------------------------------
+waitforedge	macro	;waits for horizontal edge border
+!1	lda _spritedata
+	cmp #255
+	beq !1
+	endm
+;---------------------------------------------------------------
+waitforninesprs	macro   ;waits for nine sprites on a line
+	ldx #8
+	lda #%00100000
+!1	bit _statusreg
+	beq !1
+	dex
+	bne !1
+	endm
+;---------------------------------------------------------------
+flyback	macro
+!1	ldX _statusreg
+	bpl !1
+	endm
+;--------------------------------------------------------------
+blackscreen	macro
+	ldy #60
+!1	ldX _statusreg
+	bpl !1
+	dey
+	bne !1
+	endm
+;---------------------------------------------------------------
+orgfullpage	macro
+!1	org (!1/256)*256+256
+	endm
+
+;---------------------------------------------------------------
+flybackvar	macro
+	asl flyflag
+!1	bit flyflag
+	bpl !1
+	endm
+;---------------------------------------------------------------
+addto16	macro		;;;address,amount
+	lda @1
+	clc
+	adc #@2
+	sta @1
+	bcc !1
+	inc @1+1
+!1	endm
+;---------------------------------------------------------------
+deca	macro		;;;dec a
+	sec
+	sbc #1
+	endm
+;---------------------------------------------------------------
+inca	macro		;;inc a
+	clc
+	adc #1
+	endm
+;---------------------------------------------------------------
+nega	macro		
+	eor #255
+	clc
+	adc #1
+	endm
+;---------------------------------------------------------------
+blackandwhite 	macro
+	php
+	pha
+	lda control1
+	and #%00011110		;;;BACK AND WHITE MODE
+	clc
+	adc #1
+	sta _control1
+	pla
+	plp
+	endm
+;---------------------------------------------------------------
+colour	macro	;9 tstates
+	lda control1
+	and #%00011110	;;SET TO COLOUR
+	sta _control1
+	endm
+;---------------------------------------------------------------
+testcrash	macro
+	jsr turninteron
+!1	blackandwhite
+	colour
+	jmp !1
+	endm
+;---------------------------------------------------------------
+changebank	macro
+	if @1=12
+	jsr changebank12rou
+	endif
+	if @1=13
+	jsr changebank13rou
+	endif
+	if @1=14
+	lda #@1
+	sta bankno
+	sta bank.tbl+@1
+	endif
+	endm
+;---------------------------------------------------------------
+incr	macro		;entry address
+	ifs [@2][]	;increases (address)
+	inc @1
+	bne !1
+	inc @1+1
+!1
+	else
+	error	wrong number of parameters in incr
+	endif
+	endm
+;---------------------------------------------------------------
+decr	macro		;entry address
+	ifs [@2][]	;decreases (address)
+	dec @1
+	pha
+	lda #$ff
+	cmp @1
+	bne !1
+	dec @1+1
+!1	pla
+	else
+	error	wrong number of parameters in decr
+	endif
+	endm
+;----------------------------------------------------------------
+dca	macro		;decrement A register
+	sec
+	sbc #1
+	endm
+;----------------------------------------------------------------
+ica	macro
+	clc
+	adc #1
+	endm
+;------------------------------------------------------------------
+add16to16	macro		;source1,source2,dest (16 bit addresses)
+	ifs [@4][]	;adds (source1) to (source2), stores in (dest)
+	lda @1
+	clc
+	adc @2
+	sta @3
+	lda @1+1
+	adc @2+1
+	sta @3+1
+	else
+	error	wrong number of parameters in add16to16
+	endif
+	endm
+;--------------------------------------------------------------
+sub16from16	macro		;source1,source2,dest (16 bit addresses)
+	ifs [@4][]	;subs (source1) from (source2), stores in (dest)
+	lda @2
+	sec
+	sbc @1 
+	sta @3
+	lda @2+1
+	sbc @1+1
+	sta @3+1
+	else
+	error	wrong number of parameters in sub16from16
+	endif
+	endm
+;---------------------------------------------------------------
+sub16fromval	macro		;source1,val,dest (16 bit addresses)
+	ifs [@4][]	;subs (source1) from value, stores in (dest)
+	lda #>@2
+	sec
+	sbc @1 
+	sta @3
+	lda #<@2
+	sbc @1+1
+	sta @3+1
+	else
+	error	wrong number of parameters in sub16from16
+	endif
+	endm
+;---------------------------------------------------------------
+add16to8	macro		;source2(16),source1(8),dest (16)
+	ifs [@4][]	;adds (source1) to (source2), stores in (dest)
+	lda @1
+	clc
+	adc @2
+	sta @3
+	lda @1+1
+	adc #0
+	sta @3+1
+	else
+	error	wrong number of parameters in add16to8
+
+	endif
+	endm
+;---------------------------------------------------------------
+sub8from16	macro		;source1(8),source2(16),dest (16)
+	ifs [@4][]	;subs (source1) from (source2), stores in (dest)
+	lda @2
+	sec
+	sbc @1 
+	sta @3
+	lda @2+1
+	sbc #0
+	sta @3+1
+	else
+	error	wrong number of parameters in sub8from16
+	endif
+	endm
+;-----------------------------------------------------------------
+add16toval	macro		;source1,value,destination (16 bit values)
+	if @1=@3
+	lda @1
+	clc
+	adc #>@2
+	sta @3
+
+	if @2<256
+
+	bcc !1
+	inc @3+1
+!1
+
+	else
+	lda @1+1
+	adc #<@2
+	sta @3+1
+	endif
+
+	else
+
+	lda @1
+	clc
+	adc #>@2
+	sta @3
+	lda @1+1
+	adc #<@2
+	sta @3+1
+	endif
+	endm
+;-----------------------------------------------------------------
+;SMALL LDIR - DIRECT
+;entry address1(16bit),address2(16bit),length(8bit)
+;transfers up to 1 page of memory from the (address1) to (address2)
+;eg sldir $3000,$4000,$80 transfers 128 bytes from $3000 on to $4000
+
+sldir	macro
+	ifs [@4][]
+uuu	= @3
+	if	uuu = $100
+uuu	= 0
+	endif	
+ 	if	uuu >255
+	error	"SMALL LDIR only up to 1 page may be transfered
+	endif
+	ldy	#0
+!1	lda	@1,y
+	sta	@2,y
+	iny
+	cpy	#uuu
+	bne	!1
+	else
+	error	wrong number of parameters in sldir
+	endif
+	endm
+;-----------------------------------------------------------------
+;SMALL LDIR - INDIRECT
+;entry address1(16bit),address2(16bit),length(8bit)
+;transfers up to 1 page of memory from the address pointed to by (address1)
+;to the address pointed to by (address2) length is stored in (length) address
+;eg slddrind $3000,$3002,$3004 where (&3000)=&2000, (&3002)=&2800, (&3004)=124
+;transfers 124 bytes from $2000 on to $2800 working UP
+
+sldirind	macro
+	ifs [@4][]
+	ldx	@3
+	ldy	#0
+!1	lda	(@1),y
+	sta	(@2),y
+	iny
+	dex
+	bne	!1
+	else
+	error	wrong number of parameters in sldirind
+	endif
+	endm
+;-----------------------------------------------------------------
+;SMALL LDDR - DIRECT
+;entry address1(16bit),address2(16bit),length(8bit)
+;transfers up to 1 page of memory from the (address1) to (address2)
+;eg slddr $3000,$4000,$80 transfers 128 bytes from $3000 on to $4000 working
+;DOWN
+slddr	macro
+	ifs [@4][]
+uuu	= @3
+	if	uuu	EQU$100
+uuu	= 0
+	endif	
+	if	uuu >255
+	error	"SMALL LDDR only up to 1 page may be transfered
+	endif
+	ldx	#uuu
+!1	lda	@1-UUU-1,x
+	sta	@2-UUU-1,x
+	dex
+	bne	!1
+	else
+	error	wrong number of parameters in slddr
+	endif
+	endm
+;-----------------------------------------------------------------
+;SMALL LDDR - INDIRECT
+;entry address1(16bit),address2(16bit),length(8bit)
+;transfers up to 1 page of memory from the address pointed to by (address1)
+;to the address pointed to by (address2) length is stored in (length) address
+;eg slddrind $3000,$3002,$3004 where (&3000)=&2000, (&3002)=&2800, (&3004)=124
+;transfers 124 bytes from $2000 on to $2800 working DOWN
+
+slddrind	macro
+ 	ifs	[@4][]
+	ldy	#@3-1
+!1	lda	(@1),y
+	sta	(@2),y
+	dey
+	bpl	!1
+	else
+	error	wrong number of parameters in slddrind
+	endif
+	endm
+;-----------------------------------------------------------------
+;-----------------------------------------------------------------
+;SMALL LDDR - DIRECT
+;entry address1(16bit),address2(16bit),length
+;transfers up to 1 page of memory from the address pointed to by (address1)
+;to the address pointed to by (address2)
+;eg slddrind $3000,$3002,$3004 where (&3000)=&2000, (&3002)=&2800, (&3004)=124
+;transfers 124 bytes from $2000 on to $2800 working DOWN
+
+slddrdir	macro
+ 	ifs	[@4][]
+	ldx	#@3
+	ldy 	#0
+!1	lda	(@1),y
+	sta	(@2),y
+	decr @1
+	decr @2
+	dex
+	bne	!1
+	else
+	error	wrong number of parameters in slddrind
+	endif
+	endm
+;-------------------------------------------------------------------
+;BIG LDIR - direct
+;entry address1(16bit),address2(16bit),length(16bit)
+;transfers up to 64K of memory from the (address1) to (address2)
+;eg sldir #3000,#4000,#800 transfers #8000 bytes from #3000 on to #4000
+
+ldir	macro		;address1(HL),address2(DE),length(BC)
+			;transfers (length) bytes of data starting
+			;at address1 to address2
+	ifs [@4][]
+	lda	#>@1
+	sta	ADDRESS
+	lda	#<@1
+	sta	ADDRESS+1
+	lda	#>@2
+	sta	ADDRESS2
+	lda	#<@2
+	sta	ADDRESS2+1
+	lda	#>@3
+	sta	ADDRESS3
+	lda	#<@3
+	sta	ADDRESS3+1
+	ldirind address,address2,address3
+	else
+	error	wrong number of parameters in ldir
+	endif
+	endm
+;------------------------------------------------------------------
+;BIG LDIR - indirect
+;entry address1(16bit),address2(16bit),length(16bit)
+;transfers up to 64K of memory from the address stored in (address1) to the
+;address stored in (address2) length is the number stored in (length)
+;eg sldir &30,&32,&34 wher (&30)=1234, (&32)=5678, (&34)=4321 transfers 4321
+;bytes from 1234 on to 5678
+
+ldirind	macro		;address1(HL),address2(DE),length(BC)
+			;transfers (length) bytes of data starting
+			;at (address1) to (address2)
+	ifs [@4][]
+	LDY #0
+!1	lda (@1),y	;at (address1) to memory starting at (address2)
+	sta (@2),y
+	inc @1	;increases (address)
+	bne !2
+	inc @1+1
+!2	inc @2	;increases (address)
+	bne !3
+	inc @2+1
+!3	dec @3
+	lda #$ff
+	cmp @3
+	bne !4
+	dec @3+1
+!4	lda @3
+	ora @3+1
+	bne !1
+	else
+	error	wrong number of parameters in ldirind
+	endif
+	endm
+;------------------------------------------------------------------
+add	macro		;does a CLC ADC with any legal addressing mode
+	ifs [@2][]
+	clc
+	adc @1
+	else
+	ifs [@3][]
+	clc
+	adc @1,@2
+	endif
+	endif
+	endm
+;------------------------------------------------------------------
+sub	macro		;does a SEC  SBC with any legal addressing mode
+	ifs [@2][]
+	sec
+	sbc @1
+	else
+	ifs [@3][]
+	sec
+	sbc @1,@2
+	endif
+	endif
+	endm
+;------------------------------------------------------------------
+move.w	macro		;entry address1,address2
+	ifs	[@3][]	;transfers a word in (address1) to (address2)
+	lda	@1
+	sta	@2
+	lda	@1+1
+	sta	@2+1
+	else
+	error	wrong number of parameters in ldDEinHL
+	endif
+	endm
+;------------------------------------------------------------------
+move.b	macro		;entry address1,address2
+	ifs	[@3][]	;transfers a byte in (address1) to (address2)
+	lda	@1
+	sta	@2
+	else
+	error	wrong number of parameters in move.b
+	endif
+	endm
+;------------------------------------------------------------------
+move.val	macro		;entry number,address
+	lda	#>@1	;puts 16 bit number into address
+	sta	@2
+	lda	#<@1
+	sta	@2+1
+	endm
+;------------------------------------------------------------------
+cphlde	macro		;entry address1,address2
+	lda @1+1	;compare (address1) with (address2)
+	cmp @2+1	;exit with zero flag set if equal
+	bne !1
+	lda @1
+	cmp @2
+!1			;here zero flag set if (address1)=(address2)
+			;carry flag set if (address1)>=(address2)
+	endm
+;------------------------------------------------------------------
+cpwordvalue	macro		;entry address1,value (16)
+	lda @1+1	;compare (address1) with value
+	cmp #<@2	;exit with zero flag set if equal
+	bne !1
+	lda @1
+	cmp #>@2
+!1			;here zero flag set if (address1)=value
+			;carry flag set if (address1)>=value
+	endm
+;------------------------------------------------------------------
+cpxyvalue	macro		;entry xy,value (16)
+			;compare xy with value
+	cpy #<@1	;exit with zero flag set if equal
+	bne !1
+	cpx #>@1
+!1			;here zero flag set if (address1)=value
+			;carry flag set if (address1)>=value
+	endm
+;------------------------------------------------------------------
+ldxy	macro         ;;;ldx with lo   ldy with hi   
+	ldx #>@1
+	ldy #<@1
+	endm
+;------------------------------------------------------------------
+stxy	macro         ;;;stx with lo   sty with hi   
+	stx #>@1
+	sty #<@1
+	endm
+;------------------------------------------------------------------
+multword	macro		;entry address1,no of times to mult by 2
+	ifs	[@3][]	;transfers a word in (address1) to (address2)
+	if @2>1
+mwn	= @2
+	DO
+mwn	= mwn/2
+	asl @1
+	rol @1+1
+	until mwn	EQU 1
+	endif
+	else
+	error	wrong number of parameters in multword
+	endif
+	endm
+;----------------------------------------------------------------
+tstatepause	macro	
+
+tleft0	= @1
+
+	if tleft0 > 1301
+tleft1	=	((tleft0-1299)/1284)
+tleft0	=	tleft0-(1299+(1284*(tleft1)))
+	sty tstatepausey
+	stx tstatepausex	
+	ldx #0	;2	;x	EQU 0 for drop thru delay of 1304
+	ldy #tleft1+1	
+!1	dex
+	bne !1
+	dey
+	bne !1	;2	;1285 * (y-1) 
+	ldy tstatepausey
+	ldx tstatepausex
+			;(1299)
+	endif
+
+	if tleft0 > 16
+	
+tleft1	= ((tleft0-12)/5)-1
+tleft0	= tleft0-((tleft1*5)+12)	
+	stx tstatepausex
+	ldx #tleft1+1
+!FGH	dex
+	bne !FGH
+	ldx tstatepausex
+	endif
+	
+	if tleft0 > 7 
+	nop
+	nop
+	nop
+tleft0	= tleft0-6
+	endif
+
+	if tleft0 > 7 
+	nop
+	nop
+	nop
+tleft0	= tleft0-6
+	endif
+
+	if tleft0 > 7 
+	nop
+	nop
+	nop
+tleft0	= tleft0-6
+	endif
+
+	if tleft0 = 6
+	nop
+	nop
+	nop
+	
+tleft0	= 0
+	endif
+
+	if tleft0=1
+	ERROR	"no 1 delay 0
+	endif
+	
+	if tleft0 > 3
+	nop
+tleft0	= tleft0-2
+	endif
+
+	if tleft0 > 3
+	nop
+tleft0	= tleft0-2
+	endif
+
+	if tleft0 > 3
+	nop
+tleft0	= tleft0-2
+	endif
+	
+	if tleft0=3
+tleft0	= 0
+	bit $01
+	endif
+	
+	if tleft0=1
+	ERROR	"no 1 delay 2
+	endif
+	
+	if tleft0=2
+tleft0	= 0
+	nop
+	endif	
+	if tleft0=1
+	ERROR	"no 1 delay 3
+	endif
+	
+	endm
+
+
+;--------------------
+;BCC   means gone past zero
+bgpz	macro
+	bcc @1
+ 	endm
+;--------------------
+;BCS   means NOT gone past zero
+bngpz	macro
+	bcs @1
+ 	endm
+;---------------------
+;$2000	status0
+;
+;128	1=allow nmi'S TO OCCUR
+;64	1=?
+;32	1=extend sprites
+;16	1=sprites at $1000
+;8	1=chars at $1000
+;4	1=vram add 32
+;2	1=interchange screens 1+2 for vertical mode
+;1	1=interchange screens 1+2 for horizontal mode
+;
+;$2001	status1
+;
+;128	1=increase blue content of all cols
+;64	1=increase green content of all cols
+;32	1=increase red content of all cols
+;16	1=sprites on
+;8	1=chars on
+;4	1=remove left edge of sprites
+;2	1=remove left edge of chars
+;1	1=monochrome
+;
+;
+
+
+

@@ -1,0 +1,869 @@
+
+
+;---------------------------------------
+flashblock	;format x,y+128*start on,block,on,off,(on,off etc) ;128=start off
+	lda extravars,x
+	bne endflashblock
+newflashblock
+	lda (address9),y
+	sta toplevvar1
+	sec
+	sbc mapstrip
+	add #16
+	cmp #48
+	bcs endflashblock
+	iny
+	lda (address9),y
+	and #31
+	sta toplevvar2
+	lda (address9),y
+	rol
+	iny
+	lda (address9),y
+	sta toplevvar3
+	sty tempy
+	lda extravars+1,x
+	adc #0
+	and #1
+	bne turnblockoff
+	jsr addachangedblock1
+	jmp endflashblock
+turnblockoff	jsr deleteachangedblock1
+endflashblock
+	ldy #4
+	jsr dectiming
+	lda #2
+	jmp backfromrou
+;---------------------------------------
+standguard	;format X,X,extrano,xstrip,y,speed of arrow,128*height+col*32+num to kill,count,(count,count etc)
+	;                                          128=hi
+	jsr checkifextraon
+	bne !1
+	jmp guardturnedoff
+!1	ldy #3
+	lda (address9),y
+	sec
+	sbc mapstrip
+	add #8
+	cmp #34
+	bcc !2
+	jmp veryendstandguard
+!2	lda (address9),y
+	jsr multstripby16
+	sta address7
+
+
+	ldx extravarpointer
+	lda extravars,x
+	bne endstandguard
+	ldy #6
+	lda (address9),y
+	sta temp
+	ldy #4
+	lda (address9),y
+	add #-22
+	bit temp
+	bpl !3
+	add #-7
+!3	iny
+	jsr shootarrow
+	lda #themfiringfx
+	jsr soundfx
+	ldx extravarpointer
+	lda extravars+2,x
+	add #64	
+	sta extravars+2,x
+endstandguard
+printtheguard
+	lda address7
+	sec
+	sbc scrxl
+	sta address8
+	lda address7+1
+	sbc scrxh
+	sta xcoordh
+	bne !3
+			;col guard with robin
+	jsr pickupcollision1
+	bcs !3	
+	lda robininvinc
+	bne !3
+	lda #1
+	sta extravars+2,x
+	lda #3
+	jsr subfromhearts
+	jmp !11	
+
+
+!3	lda extravars+2,x
+	and #15
+	tay
+	bne !8
+	ldy #6
+	lda (address9),y
+	and #15
+	sta extravars+2,x
+	bne !3
+!8	lda guardcolours,y
+	sta spritecolour
+
+
+	lda arrowcounter
+	beq !1
+	jsr collidewitharrow
+	bcs !1
+	ldx #0
+	jsr takearrowoffrou
+!11	ldx extravarpointer
+	dec extravars+2,x		;decing number of times guard hit
+!2	ldy #4
+	lda (address9),y
+	sta address8+1
+	lda extravars+2,x
+	and #15
+	bne !5
+	jsr turnoffextra	
+	lda #5
+	jsr startstars ;large explosion for guard
+	lda #killthemtotallyfx
+	jsr soundfx
+	lda #&45
+	jsr addtoscore
+	jmp !1
+!5	lda #4
+	jsr startstars ;small explosion for guard
+	lda #&42
+	jsr addtoscore
+	lda #killthemfx
+	jsr soundfx
+!1	ldx extravarpointer
+	lda extravars+2,x
+	and #%11110000
+	beq !9
+	lda extravars+2,x
+	add #-16
+	sta extravars+2,x
+	lda #2
+!9	sta temp2
+	ldy #4
+	lda (address9),y
+	sta temp
+	iny
+	lda (address9),y
+	asl
+	php
+	iny
+	lda (address9),y
+	asl
+	lda #guard
+	adc #0
+	add temp2
+	plp
+	ldx address8
+	ldy temp
+	jsr winprintspriteposrev
+
+veryendstandguard
+	ldy #6
+	jsr dectiming
+guardturnedoff
+	lda #3
+	jmp backfromrou
+guardcolours defb 255,3,1,0,2,2,2,2,2
+;--------------------------------
+collidewitharrow
+	ldy #4
+	lda (address9),y
+	sec
+	sbc arrowy
+	cmp #32
+	bcs notcollidewitharrow
+collidebatwitharrow	
+	lda address7	;lda (address9),y
+	sec
+	sbc arrowxl
+	sta temp
+	lda address7+1	;lda (address9),y
+	sbc arrowxh
+	tax
+	lda temp
+	add #12	
+	bcc !2
+	inx
+!2	cpx #0
+	bne !1
+	cmp #24
+!1
+notcollidewitharrow
+	rts
+;---------------------------------------------------------
+platformh	;format X,X,num,>minx,<minx,>maxx,<manx,y
+	;always starts off and min coord
+	iny
+	lda (address9),y
+	sec
+	sbc scrxl
+	iny
+	lda (address9),y
+	sbc scrxh
+	add #1
+	bmi endplatformh
+	iny
+	lda (address9),y
+	sec
+	sbc scrxl
+	iny
+	lda (address9),y
+	sbc scrxh
+	cmp #3
+	bcs endplatformh
+	jsr moveplatformh
+	ldx extravarpointer
+	
+collideplatwithrobin
+	lda xcoordh
+	bne endplatformh
+	jsr collplatwithrob
+	bcs endplatformh
+
+	lda extravars+3,x
+	beq !3
+	bmi !2
+	incr robinxl
+	jmp !3
+!2	decr robinxl
+!3
+	lda orobinxl
+	cmp robinxl
+	beq platnotmoving  
+	bcc platmovingright
+	jsr findwallleft
+	beq platnotmoving
+	jsr restorex
+	beq platnotmoving
+platmovingright
+	jsr findwallright
+	beq platnotmoving
+	jsr restorex
+platnotmoving
+
+	jsr robinjumpoffplatform
+
+endplatformh	lda #4
+	jmp backfromrou
+;------------------------------------------------
+collplatwithrob
+	lda extravars+2,x
+	sec
+	sbc robiny
+	add #4
+	cmp #6
+	bcs !1	
+	lda address7
+	sec
+	sbc robinonscrx
+	add #14
+	cmp #28
+!1	rts
+;------------------------------------------------
+checkifplaton
+	lda extravars+3,x
+	bne !1
+	ldy #3
+	lda (address9),y
+	sta extravars+0,x
+	iny
+	lda (address9),y
+	sta extravars+1,x
+	ldy #7
+	lda (address9),y
+	sta extravars+2,x
+	ldy #2
+	jsr checkifextraon
+	ldx extravarpointer
+	cmp #0
+	bne !2
+	lda #1
+	sta extravars+3,x
+!1	rts
+!2	lda #0
+	rts
+;-----------------------
+moveplatformh
+	jsr checkifplaton
+	beq printplatform
+!1	bmi plathminus		
+	ldy #5
+	inc extravars+0,x
+	bne !2
+	inc extravars+1,x
+!2	jmp movedplath
+plathminus	ldy #3
+	dec extravars+0,x
+	lda extravars+0,x
+	cmp #255	
+	bne movedplath
+	dec extravars+1,x
+movedplath	lda extravars+0,x
+	cmp (address9),y
+	bne printplatform
+	iny
+	lda extravars+1,x
+	cmp (address9),y
+	bne printplatform
+reverseplatdir
+	lda extravars+3,x
+	eor #255
+	sta extravars+3,x
+printplatform
+	lda extravars+0,x
+	sec
+	sbc scrxl
+	sta address7
+	lda extravars+1,x
+	sbc scrxh
+	sta xcoordh
+	ldy extravars+2,x
+	sty address7+1
+	ldx address7
+	lda #platform
+	jmp winprintsprite
+;----------------------------------
+platformv	;format X,X,num,>x,<x,X,maxy,miny
+	;always starts off and min coord
+	iny
+	lda (address9),y
+	sec
+	sbc scrxl
+	iny
+	lda (address9),y
+	sbc scrxh
+	add #1
+	cmp #3
+	bcs endplatformv
+	jsr moveplatformv
+	ldx extravarpointer
+collideplatwithrobinv
+	lda xcoordh
+	bne endplatformv
+	jsr collplatwithrob
+	bcs endplatformv
+	jsr robinjumpoffplatform
+endplatformv	lda #4
+	jmp backfromrou
+;----------------------------------
+moveplatformv
+	lda counter
+	and #1
+	bne printplatform
+	jsr checkifplaton
+	beq printplatform
+!1	bmi plathminusv		
+	ldy #6
+	inc extravars+2,x
+	bne movedplathv
+plathminusv	ldy #7
+	dec extravars+2,x
+movedplathv	lda extravars+2,x
+	cmp (address9),y
+	beq reverseplatdir
+	bne printplatform
+;----------------------------------
+robinjumpoffplatform
+	lda robingravity
+	cmp #128
+	beq !4
+	cmp #0
+	bmi endjumpoffplatform
+!4	lda #0
+	sta robinjumping
+	lda address7+1
+	sta robiny
+	lda #128
+	sta robingravity
+	lda pad
+	and #amask
+	beq endjumpoffplatform
+	jmp jumpingok
+endjumpoffplatform
+	rts
+;--------------------------------------------
+keyrou	;format X,X,num,xstrip,y
+	jsr checkifextraon
+	beq !2
+	ldy #3
+	lda (address9),y
+	sec
+	sbc mapstrip
+	cmp #18
+	bcs !2
+	lda (address9),y
+	jsr multstripby16sub
+	jsr pickupcollision1
+	bcs !1
+	sty address8+1
+	ldy #3
+	lda (address9),y
+	tay
+	lda times16lo,y
+	sta address7
+	lda times16hi,y
+	sta address7+1
+	lda #3
+	jsr startstars	;start key explosion keys
+	lda #&31
+	jsr addtoscore
+	lda #&45
+	jsr addtoscore
+
+	jsr turnoffextra
+	lda #pickupkeyfx
+	jsr soundfx
+
+	ldy #5
+	lda (address9),y
+	beq !2
+	cmp #255-noofdoors
+	bcs !3
+	jsr turnoffdoor  ;this turns on lifts
+	jmp !2	
+
+!3	jsr openadoor
+	jmp !2
+!1	
+	lda xcoordh
+	bne !2
+	lda #1
+	sta temp
+
+;----------------------------------------
+	lda counter	;make keys pulse
+	lsr
+	lsr
+	and #3
+	sta temp
+;-----------------------------------------
+
+	ldx address8
+	lda #&9b ;key
+	jsr pokesprite2by2
+;	jsr winprintsprite
+!2	jmp backfromrounovars
+;------------------------------------
+updatespitters
+	lda counter
+	asl
+	asl
+	asl
+	asl
+	and #128+64
+	add #3
+	sta temp
+
+	ldx #noofspitters-1
+loopspit	stx temp8
+	lda spittery,x
+	beq endloopspit
+	inc spittery,x
+	inc spittery,x
+	lda spittery,x
+	cmp #220
+	bcs takespitoff1
+
+	ldy #2
+	lda spitterdir,x
+	bpl !1
+	ldy #-2
+!1	tya
+	add spitterxl,x
+	sta spitterxl,x
+	lda spitterxh,x
+	adc spitterdir,x
+	sta spitterxh,x
+!5
+	lda spitterxl,x
+	sec
+	sbc scrxl
+	sta temp9
+	lda spitterxh,x
+	sbc scrxh
+	bne endloopspit
+	lda spittery,x
+	sta address7
+	add #ydisplace
+	tay
+	ldx temp9
+	lda #&99
+	jsr pokesprite
+	ldy address7
+	ldx temp9
+	jsr checkchrcollision ;spit
+	bcc endloopspit
+takespitteroff
+	ldx temp8
+takespitoff1	lda #0
+	sta spittery,x
+spitternothitrobin
+endloopspit	ldx temp8
+	dex
+	bpl loopspit
+	rts
+
+;--------------------
+;checkchrcollisionspit
+;	txa
+;	sec
+;	sbc robinonscrx
+;	add #16
+;	cmp #24
+;	bcs spitnocollision
+;	tya
+;	add #4
+;	TAY
+;	bne nowchrchecky
+
+
+checkchrcollision	;for spitter
+		;enter x,y 
+
+	txa
+	sec
+	sbc robinonscrx
+	add #10
+	cmp #20
+	bcs spitnocollision
+
+	tya
+nowchrchecky
+	sec
+	sbc robiny
+	bcs spitnocollision
+	tya
+	sec
+	sbc robinheight
+	bcc spitnocollision
+	lda robininvinc
+	bne spitnocollision
+	lda #1
+	jsr subfromhearts		;spit has hit robin
+	sec
+	rts
+spitnocollision
+	clc
+	rts
+;-----------------------------------------
+canonrou	;format X,X,xstrip,y,speed of arrow,count,(count,count etc)
+	lda (address9),y
+	sec
+	sbc mapstrip
+	add #8
+	cmp #34
+	bcs veryendcanon
+!3
+	lda (address9),y
+	jsr multstripby16
+	sta address7
+	lda extravars,x
+	bne endcanon
+	ldy #3
+	lda (address9),y
+	iny
+	jsr shootarrow
+	lda #2
+	sta arrowcanon,x
+
+endcanon	lda address7
+	sec
+	sbc scrxl
+	tax
+	lda address7+1
+	sbc scrxh
+	sta xcoordh
+	ldy #3
+	lda (address9),y
+	sta temp
+	iny
+	lda (address9),y
+	asl
+	lda #canon
+	ldy temp
+	jsr winprintspriteposrev
+
+veryendcanon	ldy #4
+	jsr dectiming
+	lda #2
+	jmp backfromrou
+;------------------------------------------
+secretrou	;format X,X,num,xstrip,y,secret num
+	jsr checkifextraon
+	beq !2
+	ldy #3
+	lda (address9),y
+	sec
+	sbc mapstrip
+	cmp #18
+	bcs !2
+	lda (address9),y
+	jsr multstripby16sub
+	jsr pickupcollision1
+	bcs !1
+	jsr turnoffextra
+	ldy #5
+	lda (address9),y
+	
+	tay
+	and #7
+	tax
+	tya
+	lsr
+	lsr
+	lsr
+	tay
+	lda secret,y
+	eor bitpattern,x
+	sta secret,y
+
+	ldy #5
+	lda (address9),y
+	jsr turnonsecret
+	jmp !2	
+!1	
+	if showcoins=1
+	lda #3
+	sta temp
+	ldx address8
+	lda #&97
+	jsr pokesprite
+	endif
+!2	jmp backfromrounovars
+;------------------
+doallsecrets	lda #23
+secretloop	pha
+	tay
+	and #7
+	tax
+	tya
+	lsr
+	lsr
+	lsr
+	tay
+	lda secret,y
+	and bitpattern,x
+	beq !1
+	pla
+	pha
+	jsr turnonsecret
+!1	pla
+	dca
+	bpl secretloop
+	rts
+;------------------
+turnonsecret	;a=num to turn on
+	asl
+	tax
+	changebank 13
+	lda secrettable,x
+	sta address
+	lda secrettable+1,x
+	sta address+1
+	lda #0
+dosecret	pha
+	tay
+	changebank 13
+	lda (address),y
+	bpl !1
+	pla
+	changebank 12
+	rts
+!1	cmp mapno
+	bne !2
+	iny
+	lda (address),y
+	sta toplevvar1
+	iny
+	lda (address),y
+	sta toplevvar2
+	iny
+	lda (address),y
+	sta toplevvar3
+	changebank 12
+	jsr addachangedblock1
+!2	pla
+	add #4
+	jmp dosecret
+	
+
+;---------------------------------------
+
+
+marionrou	ldy #3
+	lda (address9),y
+	jsr multstripby16sub
+!2	lda extravars,x
+	cmp #6*32+1
+	beq !1
+	inc extravars,x
+	and #31
+	bne !1
+	lda extravars,x
+	lsr
+	lsr
+	lsr
+	lsr
+	lsr
+	cmp #6
+	bne !3
+	lda changedblockspointer
+	cmp #&12
+	bne !1
+	ldy #6
+	bne !4	
+!3	tay
+	lda treasures,y
+	bne !1
+!4	sty temp
+	lda #12
+	sec
+	sbc temp
+	tay
+	ldx #13
+	lda #&20
+	jsr addachangedblock
+	
+
+!1
+checkrobinanim
+	ldx extravarpointer
+	lda extravars+1,x
+	bne alreadyanim
+	
+	lda robiny
+	cmp #&5f
+	bne !2
+	lda #2
+	jsr starttune
+	ldx extravarpointer
+	ldy #noofonscreens-1
+	lda #0
+	sta extrason+(157/8)
+!1	sta onscreenrou,y
+	dey
+	bpl !1	
+	inc extravars+1,x
+!2	jmp printmarion
+alreadyanim	lda extravars+1,x
+	cmp #150
+	bne !1
+	jmp fireworkdisplay
+!1	inc extravars+1,x
+printrobinend
+	lda minmap
+	cmp #255
+	beq !11
+	lda #&42
+	jsr addtoscore
+	lda #&55
+	jsr addtoscore
+!11	lda #200
+	sta robininvinc
+	lda #0
+	sta robinjumping
+	sta robinladder	
+	lda extravars+1,x
+	bmi !3
+	lda #&c8
+	sec
+	sbc extravars+1,x
+	bmi !1
+!3	lda #&80
+!1	sta robinxl
+	lda #-1
+	sta oleftright
+	lda #0
+	sta robinfiring
+	sta robincrouch
+	lda extravars+1,x
+	bmi !2
+	cmp #55
+	bcs !4
+	lda extravars+1,x
+	lsr
+	lsr
+	lsr
+	and #7
+	sta robinanim
+	jmp !5
+!4	
+	jsr doheart
+	lda #254
+	sta robincrouch
+!2	lda #255
+	sta robinanim
+!5
+	changebank 13
+	jsr printrobin1
+	changebank 12
+	lda robinxl
+	sta orobinxl
+
+printmarion	ldx #128-32+10
+	ldy #56
+	lda #marion
+	jsr printsprite	
+
+	lda #3
+	jmp backfromrou
+
+fireworkdisplay
+	inc extravars+2,x
+	lda extravars+2,x
+	cmp #256-7
+	bne !3
+	lda #&fd
+	sta fadecounter
+	sta completedgame
+!3
+	lda counter
+	and #254
+	add #1
+	sta counter
+	ldy #4
+	lda heartstable
+	beq !2
+	iny
+	lda heartstable+16
+	bne !1
+!2	lda seed+1
+	and #127
+	add #64
+	sta address8+1
+	lda #0
+	sta address7+1
+	lda seed+2
+	and #127
+	add #64
+	sta address7
+	tya
+	jsr startstars
+	ldx extravarpointer
+!1	jmp printrobinend
+
+doheart
+	lda #&c
+	sta coinnum
+	lda #8
+	sta coinnumx
+	lda #65
+	sta coinnumy
+	lda #64
+	sta coinnumcount
+	rts
+;--------------------------------
+redefinewaterbank
+	changebank 13
+	jsr redefinewater
+	changebank 12
+	jmp backfromrounovars
+
+
+

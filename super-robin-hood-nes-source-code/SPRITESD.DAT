@@ -1,0 +1,359 @@
+
+
+spritetable ;;defw pointers  to spritedefs   256 max
+	sprvar robinheads
+ defw head0,head1,head2,head3
+	sprvar robinbodies
+ defw robinbody0,robinbody1,robinbody2,robinbody3
+ defw robinbody4,robinbody5,robinbody6,robinbody3
+	sprvar bodyfiring
+ defw robinstanding,bodyfire0,bodyfire1,bodyfire2,bodyfire3
+	sprvar legsrunning
+ defw legsrunning0,legsrunning1,legsrunning2,legsrunning3
+ defw legsrunning4,legsrunning5,legsrunning6,legsrunning3
+	sprvar morelegs
+ defw legsstanding,legshalfcrouch,bodyfullcrouch,legsfullcrouch,legsjumping
+ defw bodyonladder,legsonladder
+	sprvar barrels
+ defw barrel0,barrel1,barrel2,barrel1
+;	sprvar balls
+; defw steelball,spikedball
+	sprvar canon
+ defw canons	
+	sprvar platform
+ defw platformspr
+	sprvar titlelogos
+ defw codemasterlogo,camericalogo,pressstart
+	sprvar deadarrows
+ defw deadarrow1,deadarrow2,deadarrow3,deadarrow4
+	sprvar trampet
+ defw trampet1,trampet2
+;	sprvar key
+; defw keyspr	
+	sprvar spider
+ defw spiderspr,spiderspr1
+	sprvar bat
+ defw bat1,bat2
+	sprvar eyes
+ defw eye1,eye2,eye3,eye4
+;	sprvar rat
+; defw rat1,rat2
+	sprvar guard
+ defw guardlow,guardhigh,guardlow1,guardhigh1
+;	sprvar treasure
+; defw chest,crown,diamond,shield,goblet,ruby,duffchest
+	sprvar fire
+ defw fire1,fire2,fire3,fire4,fire5
+	sprvar marion
+ defw marions
+	sprvar pausespr
+ defw pauses
+
+
+spritedefs	 ;;no. of paras,    X dis,Y dis,pallette/flip,frmlo,frmhi
+	;;no of paras,  pallette/flip   ,X  ,Y  ,frmlo  ,frmhi
+;;N.B. to make more efficent data pallette/flip byte holds extra stuff
+;;     0        0      0           0         0        0        0        0
+;    vert      hor   X/Y dis    point to   2x2 spr          pallette pallette
+;                               chr, not   start from
+;    			 lo,hi spr  chr
+
+
+
+codemasterlogo
+	defb 7,%00000000,     >cmdata0,<cmdata0
+	defb   %00100000,-3,8,>cmdata1,<cmdata1
+	defb   %00100000,-8,16,>cmdata2,<cmdata2
+	defb   %00100000,-8,24,>cmdata3,<cmdata3
+	defb   %00100000,-5,32,>cmdata4,<cmdata4
+	defb   %00100000,5,40,>cmdata5,<cmdata5
+	defb   %00110000,-8,36,&f2
+cmdata0	hex 41
+	hex d5d6d7d8
+cmdata1	hex 51
+	hex d9dadbdcdd
+cmdata2	hex 61
+	hex dedfe0e1e2e3
+cmdata3	hex 61
+	hex e4e5e6e7e8e9
+cmdata4	hex 51
+	hex eaebecedee
+cmdata5	hex 31
+	hex eff0f1
+camericalogo
+	defb 2,%00000001,     >camdata0,<camdata0
+	defb   %00100001,6,16,>camdata1,<camdata1
+
+camdata0	hex 82
+	hex dcdddedf e0e1e2e3
+	hex e4e5e6e7 e8e9eaeb
+camdata1	hex 61
+	hex ecededededee
+
+pressstart	defb 2,%00000010,>psdata,<psdata
+	defb   %00100010,0,10,>psdata1,<psdata1
+
+psdata	hex 51
+	hex eff0f1f2f2	
+psdata1	hex 51
+	hex f2f3f4f0f3
+
+head0	defb 1,%00111100,-5,-15,1
+
+head1	defb 1,%00111100,-5,-15,5
+	
+head2	defb 1,%00111100,-5,-15,9
+
+head3	defb 1,%01111100,-8,-15,&d
+
+robinbody0	defb 1,%00100100,-7,-14,>body0data,<body0data
+robinbody1	defb 1,%00100100,-9,-15,>body1data,<body1data
+robinbody2	defb 1,%00100100,-8,-13,>body2data,<body2data
+robinbody3	defb 1,%00111100,-6,-12,&23
+robinbody4	defb 1,%00111100,-6,-11,&27
+robinbody5	defb 1,%00100100,-8,-13,>body5data,<body5data
+robinbody6	defb 1,%00111100,-7,-13,&31
+
+body0data	hex 32
+	hex 111213141516
+body1data	hex 32
+	hex 1718191a1b1c
+body2data	hex 32
+	hex 1d1e1f202122
+body5data	hex 32
+	hex 2b2c2d2e2f30
+
+;---------
+robinstanding defb 1,%00100100,-8,-15,>robstanddata,<robstanddata
+robstanddata	hex 23
+	hex 35363738393a
+bodyfire0	defb 3,%00100100,-8,-15,>bodyfire0data0,<bodyfire0data0
+	defb   %00100100,8-8,-15,>bodyfire0data1,<bodyfire0data1
+	defb   %00100100,16-8,4-15,>bodyfire0data2,<bodyfire0data2
+bodyfire0data0 hex 12
+	hex 353b
+bodyfire0data1 hex 13
+	hex 363c3d
+bodyfire0data2 hex 12
+	hex 3e3f
+bodyfire1	defb 2,%00100100,-8,-15,>bodyfire1data,<bodyfire1data
+	defb   %00110100,16-8,16-15,&44
+bodyfire1data hex 32
+	hex 353640414243
+bodyfire2	defb 2,%00100100,-8,-15,>bodyfire2data,<bodyfire2data
+	defb   %00110100,16-8,16-15,&49
+bodyfire2data hex 32
+	hex 354546414748
+bodyfire3	defb 2,%00100100,-8,-15,>bodyfire3data,<bodyfire3data
+	defb   %00110100,16-8,16-15,&4e
+bodyfire3data hex 32
+	hex 354a4b414c4d
+;-----------------
+legsrunning0	defb 2,%00100100,2-8,-14,>legsrunning0data0,<legsrunning0data0
+	defb   %00100100,-8,8-14,>legsrunning0data1,<legsrunning0data1
+legsrunning0data0 hex 21
+	hex 4f50
+legsrunning0data1 hex 21
+	hex 5152
+
+legsrunning1 defb 2,%00100100,-13,-13,>legsrunning1data,<legsrunning1data
+	defb   %00110100,16-13,8-13,&56
+legsrunning1data hex 31
+	hex 535455
+
+legsrunning2	defb 1,%00111100,-10,-14,&57
+
+legsrunning3	 defb 2,%00100100,-6,-14,>legsrunning3data,<legsrunning3data
+	defb   %00110100,-6,8-14,&5d
+legsrunning3data hex 21
+	hex 5b5c
+
+legsrunning4 defb 2,%00100100,1-8,-14,>legsrunning4data0,<legsrunning4data0
+	defb   %00100100,0-8,8-14,>legsrunning4data1,<legsrunning4data1
+legsrunning4data0 hex 21
+	hex 5e5f
+legsrunning4data1 hex 21
+	hex 5152
+
+legsrunning5 defb 2,%00100100,-12,-13,>legsrunning5data,<legsrunning5data
+	defb   %00110100,16-12,8-13,&56
+legsrunning5data hex 31
+	hex 536055
+
+legsrunning6 defb 1,%00100100,-9,-14,>legsrunning6data,<legsrunning6data
+legsrunning6data hex 22
+	hex 5761595a
+;---------------
+legsstanding	defb 1,%00111100,-4,-14,&62
+legshalfcrouch defb 2,%00100100,1-8,-13,>legshalfcrouchdata0,<legshalfcrouchdata0
+ 	defb      %00100100,-8,8-13,>legshalfcrouchdata1,<legshalfcrouchdata1
+legshalfcrouchdata0 hex 21
+	hex 6667
+legshalfcrouchdata1 hex 21
+	hex 6869
+
+bodyfullcrouch defb 1,%00100100,-5,-7,>bodyfullcrouchdata,<bodyfullcrouchdata
+bodyfullcrouchdata hex 21
+	hex 6a6b
+legsfullcrouch defb 1,%00100100,-9,-7,>legsfullcrouchdata,<legsfullcrouchdata
+legsfullcrouchdata hex 31
+	hex 6c6d6e
+
+legsjumping defb 3,%00100100,-13,1-11,>legsjumpdata,<legsjumpdata
+ 	defb  %00110100,16-13,0-11,&71
+	defb  %00110100,18-13,6-11,&56
+legsjumpdata hex 21
+	hex 6f70
+
+bodyonladder	defb 1,%00111100,-9,-15,&72
+legsonladder defb 2,%00100100,-5,-12,>legsladderdata,<legsladderdata
+	defb   %00110100,-5,8-12,&78
+legsladderdata hex 21
+	hex 7677
+;--------------------
+barrel0	defb 4,%00110001,-8,-8,&a8
+	defb   %01110001,0 ,-8,&a8
+	defb   %10110001,-8,-8,&a8
+	defb   %11110001,0 ,-8,&a8
+barrel1	defb 4,%00110001,-8,-8,&aa
+	defb   %00110001,0 ,-8,&ab
+	defb   %11110001,-8,-8,&ab
+	defb   %11110001,0 ,-8,&aa
+barrel2	defb 4,%00110001,-8,-8,&a9
+	defb   %01110001,0 ,-8,&a9
+	defb   %10110001,-8,-8,&a9
+	defb   %11110001,0 ,-8,&a9
+
+;steelball	defb 1,%00111010,-8,-8,&af
+;spikedball	defb 1,%00111010,-9,-8,&b3
+canons	defb 1,%00100010,-12,0,>canondata,<canondata
+platformspr	defb 1,%00100001,-12,1,>platdata,<platdata
+
+trampet1	defb 4,%00110010,-8,0,&a2
+	defb   %01110010,0 ,0,&a2
+	defb   %00110010,-8,8,&a3
+	defb   %01110010,0 ,8,&a3
+trampet2	defb 2,%00110010,-8,8,&a1
+	defb   %01110010,0 ,8,&a1
+
+;keyspr	defb 1,%00111001,-8,-8,&9b
+
+spiderspr	defb 2,%00100001,-8,-8,>spider1,<spider1
+	defb   %01100001,0,-8 ,>spider1,<spider1
+spiderspr1	defb 2,%00100001,-8,-8,>spider2,<spider2
+	defb   %01100001,0,-8 ,>spider2,<spider2
+
+spider1	hex 12a4a5
+spider2	hex 12a6a7
+
+bat1	defb 2,%00110001,-8,-4,&9f
+	defb   %01110001,0,-4,&9f
+bat2	defb 2,%00110001,-8,-5,&a0
+	defb   %01110001,0,-5,&a0
+
+
+
+
+
+coindata	hex 12b3b4
+canondata	hex 32b7b8b9babbbc
+platdata	hex 31acadae
+
+
+
+;--------------------
+deadarrow1	defb 4,%00110001,-16,16,&c7
+	defb   %01110001,16,16,&c7
+	defb   %11110001,16,-16,&c7
+	defb   %10110001,-16,-16,&c7
+deadarrow2	defb 4,%00110001,-12,12,&c7
+	defb   %01110001,12,12,&c7
+	defb   %11110001,12,-12,&c7
+	defb   %10110001,-12,-12,&c7
+deadarrow3	defb 4,%00110001,-8,8,&c7
+	defb   %01110001,8,8,&c7
+	defb   %11110001,8,-8,&c7
+	defb   %10110001,-8,-8,&c7
+deadarrow4	defb 4,%00110001,-4,4,&c7
+	defb   %01110001,4,4,&c7
+	defb   %11110001,4,-4,&c7
+	defb   %10110001,-4,-4,&c7
+;-----------------------
+eye1	defb 2,%00110001,-4,0,&c5
+	defb   %01110001,4,0,&c5
+
+eye2	defb 2,%00110001,-3,0,&c6
+	defb   %00110001,2,0,&c6
+
+eye3	defb 2,%11110001,-3,-8,&c6
+	defb   %11110001,3,-8,&c6
+
+eye4	defb 2,%11110001,-2,-8,&c6
+	defb   %11110001,4,-8,&c6
+;------------------------
+;rat1	defb 1,%00111001,-8,0,&90
+;rat2	defb 1,%00111001,-8,0,&c8
+;------------------------
+guardlow	defb 2,%00110100,8,-18,&ec	    	;firing low
+	defb   %00100100,-8,-32,>guardbody,<guardbody
+guardbody	hex 24e4e5e6e7e8e9eaeb
+
+guardhigh	defb 2,%00110100,8,-24,&f1		;firing high
+	defb   %00100100,-8,-32,>guardbody1,<guardbody1
+guardbody1	hex 24e4e5edeeeff0eaeb
+
+guardlow1	defb 3,%00110100,6,-18,&ec	    	;firing low recoiling
+	defb   %00111100,-9,-32,&e4
+	defb   %00111100,-8,-16,&e8
+
+guardhigh1	defb 3,%00110100,6,-24,&f1		;firing high
+	defb   %00100100,-9,-32,>guardbody2,<guardbody2
+	defb   %00100100,-8,-16,>guardbody3,<guardbody3
+
+guardbody2	hex 22e4e5edee
+guardbody3	hex 22eff0eaeb
+
+
+;-------------------------
+;chest	defb 1,%00111001,-8,-8,&cc
+;crown	defb 1,%00111001,-8,-8,&d0
+;diamond	defb 1,%00111010,-8,-8,&d4
+;shield	defb 1,%00111001,-8,-8,&d8
+;goblet	defb 1,%00111001,-8,-8,&dc
+;ruby	defb 1,%00111011,-8,-8,&e0
+;duffchest	defb 1,%00111001,-8,-8,&cd
+;-------------------------
+fire1	defb 1,%10110011,-4,8,&95
+fire2	defb 4,%00110011,-5,-12-4,&bf
+	defb   %00110011,-2,-12-4,&c0
+	defb   %00110011,-5,-8-4,&c1
+	defb   %00110011,-2,-8-4,&c2
+fire3	defb 4,%00110011,-7,-12-4,&bf
+	defb   %00110011,-1,-12-4,&c0
+	defb   %00110011,-7,-6-4,&c1
+	defb   %00110011,-1,-6-4,&c2
+fire4	defb 3,%00111011,-8,-12-4,&bf
+	defb   %00110011,-8,0-4,&c3
+	defb   %00110011,0 ,0-4,&c4
+fire5	defb 3,%00111011,-8,-12-4,&bf
+	defb   %00110011,-8,4-4,&c3
+	defb   %00110011,0 ,4-4,&c4
+
+;-------------------------
+marions	defb 4,%00100011,0,0,>marion1,<marion1
+	defb   %00100011,2,8,>marion2,<marion2
+	defb   %00111011,3,16,&fa
+	defb   %00100011,2,32,>marion3,<marion3
+marion1	hex 21f6f7
+marion2	hex 21f8f9
+marion3	hex 21feff
+;--------------------------
+pauses	defb 5,%00110010,0,0,&7a
+	defb   %00110010,10,0,&7b
+	defb   %00110010,20,0,&7c
+	defb   %00110010,30,0,&7d
+	defb   %00110010,40,0,&7e
+	defb   %00110010,50,0,&7f
+
+
+

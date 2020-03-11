@@ -1,0 +1,209 @@
+	if title=1
+titlescreen
+
+	lda #255
+	sta solidfound
+;	lda #10
+;	jsr starttune
+	
+stillintitle	inc solidfound
+	lda solidfound
+	and #3
+	sta solidfound
+	and #1
+	beq showtitle
+	
+	if hiscore=1
+sethiscore	lda solidfound
+	and #127
+	lsr
+	eor #255
+	sta hipos
+	jsr setuphiscores
+	jmp turnonscreen
+	endif
+showtitle	jsr setuptitlescreen
+
+turnonscreen	jsr turninteron
+waitforstart	flybackvar
+
+	lda solidfound
+;	bmi conttitleloop
+	and #1
+	bne notshowingtitle
+	jsr putontitlesprites
+	jmp conttitleloop
+notshowingtitle
+	ldx #&0d
+	jsr pulsecolour
+
+conttitleloop
+	lda tune
+	bne !2
+	lda #1
+	jsr starttune
+!2
+	lda counter
+	and #7
+	bne !1
+	dec robiny
+	bne !1
+	lda #&fb
+	sta fadecounter
+!1	jsr waitforstartkey
+	beq waitforstart
+	lda solidfound
+	bpl stillintitle
+	rts
+
+putontitlesprites
+	lda control0
+	eor #8+16
+	waitforsprcol
+	sta _control0
+	ldx #&19
+	jsr pulsecolour
+
+	ldx #16
+	ldy #16-ydisplace
+	lda #titlelogos
+	jsr printsprite
+	
+;	ldx #176
+;	ldy #26*8+2-ydisplace
+;	lda #titlelogos+1
+;	jsr printsprite
+	
+	ldx #128-8
+	ldy #24*8-ydisplace
+	lda #titlelogos+2
+	jmp printsprite
+;--------------------------------------------
+setuptitlescreen
+	lda #titletopchrs0.245
+	jsr copyblockofcompactedchrs
+ 	lda #titlebotchrs0.245
+	jsr copyblockofcompactedchrs
+	ldxy titlescreenmess
+	jsr prtmessage
+	jsr clearspriteblock
+	lda #16*8-1-8
+	sta spriteblock
+	lda #&f3
+	sta spriteblock+1
+	lda #3	
+	sta spriteblock+2
+	lda #225
+	sta spriteblock+3
+	lda #100
+	sta robiny
+	ldxy titlescreencolours
+	jmp setfade
+;--------------------------------------------
+titlescreencolours
+	HEX 0e091727
+	hex 0e210919
+	hex 0e211738
+	hex 0e210020
+	
+	hex 0e27110e
+	hex 0e20150e
+	hex 0e000000
+	hex 0e0e0e0e
+titlescreenmess
+	defb mgosub
+	defw clearscr
+	defb maddr+&20,&0a
+ HEX 010205070802050708121E1F
+ defb mloop,10,&20,mendloop,mdownline
+ HEX 0304090A0B04091314152122 
+ defb mloop,10,&20,mendloop,mdownline
+ HEX 00050C0D0E0F161718192324 
+ defb mloop,10,&20,mendloop,mdownline
+ HEX 0006050310111A1B1C1D25262728292A
+ defb mloop,6,&20,mendloop,mdownline
+ HEX 000000002D2E32333435404142435051525360612020
+ defb mdownline
+ HEX 000006032F0536373438444546475455565762636420
+ defb maddr+&20,&c6,mloop,5,0,mendloop 
+ hex 0603300501393A343B48494A4B58595A5B65666720
+ defb mdownline
+ hex 00002B2C0006300131053C3D3E3F4C4D4E4F5C5D5E5F34686920
+ defb mdownline,mlen,26
+ HEX 002C6F707172020507087E7F8081838485868C8D8E8F34942020
+ defb mdownline,mlen,26
+ HEX 2B6A6F70737404090A0B1F202020208788899091929395962020
+	defb mjump
+	defw titlescreenmess2
+titlescreenmess2
+ defb mdownline,mlen,26
+ HEX 6B6C70757677790C0D7A82202020872020202020202097989920
+ defb mdownline,mlen,26
+ HEX 6D6E7800002B2C7B7C7D202020208A8B8720202020209A9B2020
+ defb mdownline,mlen,26
+ HEX 000000A66A6F70B220B3BCBD20BEC8C9CACBD1D2202020202020
+ defb mdownline,mlen,26 
+ HEX 00A0A7A8A9AAB4B5B6B734BFC0C1CCCDCECF34D3BD2020202020
+ defb mdownline,mlen,26+3*32
+ HEX A1A2ABACADAEB83434343434C2C3000000D0D4D5BFD6DA202020
+ HEX 9C9D9E9FA3A4A52020AFB0B1B9BABB34C4C5C6C700000000D7D8B0D9DB202020
+ HEX 01020304090A0B0C111111111111161718191A00000000001C1D1E1111111111
+ HEX 050607080D0E0F10121314151511111111111B0000000000001F111111111111
+	defb mjump
+	defw titlescreenmess3
+titlescreenmess3 defb mlen,6*32+15
+ HEX 2021222328292A2B303132333536371111113C00000000000040414211454647
+ HEX 242526272C2D2E2F3434343438393A3B3D3E3F00000000000000434448494949
+ HEX 4A4B4C4D5A5B5C5D1111111111116C6D6E6F7000000000000000007D82838485
+ HEX 4E4F50515E5F6061111111111111343471727374767778000000007E34348687
+ HEX 52535455626364656A1111111111343434343475797A7B7C7F7C808188898A8B
+ HEX 56575859666768696B111111111134343434343434343434343434348C8D8E8F
+ HEX 909192939FA0A1A2AEAFB01111BDBE
+ defb mloop,17,&11,mendloop
+ defb mlen,15
+ HEX 9495969700A3A4A5B1B2B3B4BFC0C1
+ defb mloop,17,&11,mendloop,mlen,14
+ HEX 98999A9BA6A7A8A9B5B6B7B8C2C3
+	defb mjump
+	defw titlescreenmess4
+titlescreenmess4
+ defb mloop,18,&11,mendloop
+ defb mlen,12 
+ HEX 349C9D9EAAABACADB9BABBBC
+ defb mloop,20,&11,mendloop,mlen,9
+ HEX C4C5C6C7CCCDCECFD4
+ defb mloop,23,&11,mendloop,mlen,8
+ HEX C8C9CACBD0D1D2D3 
+ defb mloop,24,&11,mendloop
+
+ defb mlen,3*16
+ HEX 0000C499AAA6A5550000F09BAAAAAAAA
+ HEX 00CCFFFBFAFAFAAA0080FFFFFFCFFFF5
+ HEX 0004555D5F007F5F0000004455555455
+	defb mend
+endtitle
+
+	endif
+
+pulsecolour ;x=colour to pulse
+	ldy vrampointer
+	lda #&3f
+	sta vrambuffer,y
+	txa
+	sta vrambuffer+1,y
+	lda #1
+	sta vrambuffer+2,y
+	lda counter
+	and #31
+	lsr
+	tax
+	lda pulsetable,x
+	sta vrambuffer+3,y
+	tya
+	add #4
+	sta vrampointer
+	rts
+pulsetable	defb &17,&26,&27,&36,&37,&38,&30,&30
+	defb &30,$38,&37,&36,&27,&26,&17,&17
+
+

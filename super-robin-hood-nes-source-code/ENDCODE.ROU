@@ -1,0 +1,48 @@
+
+
+ED15
+b15	equ &fff9-ED15
+
+
+T	EQU b12+b13+b14+b15
+
+	LIST ON
+BANK15 DEFB <B15,>B15 ;TOP BANK everything else
+TOTAL  DEFB <T,>T
+	LIST OFF
+
+
+endofcode
+	if endofcode>&fff9
+	error "main bank overflowed &fffa
+	endif
+
+veryend
+ 	org $fff9
+irqinterupt	rti
+	defw &C007	;CM_NMI  ;INTERUPT
+	defw START
+	defw IRQINTERUPT
+
+	if master=0
+	BANK 12,START
+	else
+	bank 12
+wipebanks	= 0
+	do
+	org &8000
+	defs &4000,0
+	bank wipebanks
+wipebanks	= wipebanks+1
+	until wipebanks=12
+
+	endif
+	send computer1
+
+
+	END
+
+
+
+
+

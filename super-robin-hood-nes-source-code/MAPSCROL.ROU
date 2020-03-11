@@ -1,0 +1,699 @@
+
+addrightedge	equ 18
+attributemasks defb %11111100,%11110011,%11001111,%00111111
+attributeands  defb %00000000,%00000000,%00000000,%00000000
+	  defb %00000001,%00000100,%00010000,%01000000
+	  defb %00000010,%00001000,%00100000,%10000000
+	  defb %00000011,%00001100,%00110000,%11000000	
+;--------------------------------------
+setxscroll
+	move.w scrxl,address2
+	
+	lda robinxl
+	sec
+	sbc #120
+	sta address2
+	lda robinxh
+	sbc #0
+	cmp #255
+	bne !1
+	lda #0
+	sta address2
+!1	sta address2+1
+
+	lda address2+1
+	sta temp
+	lda address2
+	lsr temp
+	ror 
+	lsr temp
+	ror 
+	lsr temp
+	ror 
+	lsr temp
+	ror
+	sta mapstrip
+	cmp #0 ;minmap
+	bcc mapnotmoved
+	cmp maxmap
+	bcc printmapdownside
+	lda maxmap
+	sta mapstrip
+	ldx #0
+	stx address2+1
+	asl
+	rol address2+1
+	asl
+	rol address2+1
+	asl
+	rol address2+1
+	asl
+	rol address2+1
+	sta address2
+!2	
+
+printmapdownside
+	cphlde scrxl,address2
+	beq mapnotmoved
+	bcs decmapset
+printmapdownside1
+	ldx #255
+	incr scrxl
+	jmp setmapset
+decmapset	decr scrxl
+	ldx #0
+setmapset	stx scrolldir
+
+	lda scrxh
+	sta temp
+	lda scrxl
+	lsr temp
+	ror 
+	lsr temp
+	ror 
+	lsr temp
+	ror 
+	lsr temp
+	ror
+	sta mapstrip
+	jsr bringonmap
+	lda interon
+	bne printmapdownside
+	jsr emptyblockbuffer
+	jmp printmapdownside
+mapnotmoved
+!1	lsr control0
+	lda scrxl
+	add #16
+	sta x.scroll
+	lda scrxh
+	adc #0
+	lsr
+	rol control0
+	rts
+;--------------------------------------
+times14tablelo
+xx	= 0
+ 	do 256
+	defb >xx
+xx	= xx+14
+	loop
+times14tablehi
+xx	= 0
+	do 256
+	defb xx/256
+xx	= xx+14
+	loop
+;---------------------------------------
+findsolid	;a=xl  x=xh   y=y   all pixels
+	;destroys all  
+	;sets  nz if solid
+!1	cpy #14*16
+	bcc !2
+	pha
+	lda robiny
+	bpl !3
+	tya
+	add #-16
+	tay
+	pla
+	jmp !1
+!3	tya
+	add #16
+	tay
+	pla
+	jmp !1
+!2	jsr findblock
+	tax
+	lda #0
+	lsr temp	;y
+	rol
+	lsr temp1	;x
+	rol
+	tay
+	lda solidchrs,x
+	and solidchrmasks,y
+	dey
+	beq shifts4
+	dey
+	beq shifts2
+	dey
+	beq shifts0
+shifts6	lsr
+	lsr
+shifts4	lsr
+	lsr
+shifts2	lsr
+	lsr
+shifts0	sta solidfound
+	cmp #0
+	rts
+
+solidchrmasks defb 128+64,32+16,8+4,2+1
+;---------------------------------------	
+findblock	;a=xl  x=xh   y=y   all pixels
+	stx temp
+	lsr temp
+	ror 
+	lsr temp
+	ror 
+	lsr temp
+	ror 
+	lsr temp
+	ror
+	tax        ;x=strip x
+	rol temp1  ;which chr
+	
+	lda mappointer
+	add times14tablelo+1,x
+	sta address
+	lda mappointer+1
+	adc times14tablehi+1,x
+	sta address+1
+	tya
+	lsr
+	lsr
+	lsr
+	lsr
+	tay
+	rol temp
+	lda (address),y ;gets block num
+	sta blockfound
+	stx blockx
+	sty blocky
+	jsr checkchangedblock
+	lda blockfound
+	rts
+;--------------------------------------
+findchr	;a=xl  x=xh   y=y   all pixels
+	jsr findblock
+;-------
+findchrpart	;used by find chr
+	tay
+	lsr temp
+	bcs bottompart
+	lsr temp1
+	bcs rightside
+	lda blkstl,y
+	sta chrfound
+	rts
+rightside	lda blkstr,y
+	sta chrfound
+	rts
+bottompart	lsr temp1
+	bcs rightside1
+	lda blksbl,y
+	sta chrfound
+	rts
+rightside1	lda blksbr,y
+	sta chrfound
+noblocksneeded
+	rts
+;-----------------------------------------
+bringonmap	lda scrxl
+	and #15
+	cmp #14
+	bcs noblocksneeded
+	tay
+	sta blocky
+	ldx mapstrip
+	bit scrolldir
+	bpl !1
+	txa
+	add #addrightedge
+	sta blockx
+	tax
+!1	stx blockx
+	
+	jsr getblockbit
+	sta address9
+	tay
+	lda blockrous,y
+	ldy blocky
+	cmp #0
+	bpl !3
+	dex
+	jsr getblockbit
+!3	jsr checkchangedblock1
+	lda blockfound
+	jsr printblocktoscreen
+	jmp checkaddflamesetc
+;-----------------------------------------
+getblockbit
+	lda mappointer
+	add times14tablelo,x
+	sta address
+	lda mappointer+1
+	adc times14tablehi,x
+	sta address+1
+	lda (address),y
+	sta blockfound
+	rts
+;-----------------------------------------
+checkchangedblock ;given x,y coords  changes blockfound if it is in table
+	inc blockx
+checkchangedblock1
+	ldx changedblockspointer
+	beq !3
+	ldx #0
+!1	lda blockx
+	cmp changedblocks,x
+	bne !2
+	lda changedblocks+1,x
+	cmp blocky
+	bne !2
+	lda changedblocks+2,x
+	sta blockfound
+	ldx blockx
+	rts
+!2	inx
+	inx
+	inx
+	cpx changedblockspointer
+	bne !1
+!3	ldx blockx
+	rts
+;-----------------------------------------
+addachangedblock ;given x,y,a  it checks it does not already exist and 
+		;             puts it into the table and prints
+	stx toplevvar1
+	sty toplevvar2
+	sta toplevvar3
+addachangedblock1
+	lda #3
+	ldx changedblockspointer
+	beq !1
+
+	ldx #0
+!2	lda changedblocks+0,x
+	cmp toplevvar1
+	bne !3
+	lda changedblocks+1,x
+	cmp toplevvar2
+	bne !3
+	lda #0
+	beq !1
+!3	inx
+	inx	
+	inx
+	cpx changedblockspointer
+	bne !2
+	lda #3
+
+!1	add changedblockspointer
+	sta changedblockspointer
+	cmp #3*maxchangedblocks
+	bne !8
+	testcrash
+!8	lda toplevvar2
+	sta changedblocks+1,x
+	lda toplevvar1
+	sta changedblocks+0,x
+	lda toplevvar3 
+	sta changedblocks+2,x
+	ldx toplevvar1
+	bit interon
+	bpl !4
+	ldy toplevvar2
+	jmp printblocktoscreencheck
+!4	rts
+;-----------------------------------------
+deleteachangedblock ;given  x,y ;deletes from the table and prints back
+			;the background
+	stx toplevvar1
+	sty toplevvar2
+deleteachangedblock1
+	lda changedblockspointer
+	beq !4
+	ldx #0
+!1	lda changedblocks+0,x
+	cmp toplevvar1
+	bne !2
+	lda changedblocks+1,x
+	cmp toplevvar2
+	bne !2
+	
+!3	lda changedblocks+3,x
+	sta changedblocks+0,x
+	inx
+	cpx changedblockspointer	
+	bne !3
+	txa
+	add #-3
+	sta changedblockspointer
+	ldx toplevvar1
+	lda mappointer
+	add times14tablelo,x
+	sta address
+	lda mappointer+1
+	adc times14tablehi,x
+	sta address+1
+	ldy toplevvar2
+	lda (address),y ;gets block num
+	jmp printblocktoscreencheck
+!2	inx
+	inx
+	inx
+	cpx changedblockspointer
+	bne !1
+!5	ldx toplevvar1
+!4	rts
+;-----------------------------------------
+blocknotonscreen
+	rts
+printblocktoscreencheck ;x,y,a
+	stx blockx
+	sty blocky
+	sta blockfound
+	txa
+	sec
+	sbc mapstrip
+	bmi blocknotonscreen
+	cmp #addrightedge+1
+	bcs blocknotonscreen
+printblocktoscreen
+	ldy blocky
+	lda blockx
+	lsr
+	and #15
+	cmp #8
+	bcc !1
+	add #7*8-8
+!1	add attrytable,y
+	sta attripointer
+;--------------------
+!12	ldx blockpointer
+
+	cpx #11*numberofblocks
+	bne !11
+	lda #0
+	sta filledblockbuffer
+	flybackvar
+	lda #1
+	sta filledblockbuffer
+	jmp !12
+
+!11	
+	ldy blockfound
+	lda blkstl,y
+	sta blockbuffer+2,x
+	lda blkstr,y
+	sta blockbuffer+3,x
+	lda blksbl,y
+	sta blockbuffer+6,x
+	lda blksbr,y
+	sta blockbuffer+7,x
+	lda blksattr,y
+	sta blockattri
+
+	lda blockx
+	lsr
+	lda blocky
+	rol
+	and #3
+	tay
+
+	add blockattri
+	sta blockattri
+	ldx attripointer
+	lda attributes,x
+	and attributemasks,y
+	ldy blockattri
+	ora attributeands,y
+	sta attributes,x	
+	
+	ldx blockpointer
+	sta blockbuffer+10,x
+	txa
+	add #11
+	sta blockpointer
+	lda blockx
+	and #%00011111
+	asl
+	sta temp
+	and #&20
+	beq !3
+	add #-&20+4
+!3	sta temp1    ;hi vram addr 
+	ldy blocky
+	lda temp
+	and #31
+	add times32tablelo,y
+	sta blockbuffer+1,x
+	lda temp1
+	adc times32tablehi,y
+	sta blockbuffer+0,x
+	
+	lda blockbuffer+1,x
+	add #32
+	sta blockbuffer+5,x
+	lda blockbuffer+0,x
+	adc #0
+	sta blockbuffer+4,x
+!2
+
+nowattri	ldy #&23
+	lda attripointer
+	cmp #8*7
+	bcc !1
+	sec
+	sbc #8*7
+	iny
+	iny
+	iny
+	iny
+!1	add #&c0
+	sta blockbuffer+9,x
+	tya
+	sta blockbuffer+8,x
+
+	rts
+
+attrytable	defb 0,0,8,8,16,16,24,24,32,32,40,40,48,48,56,56
+;-----------------------------------------------
+gointonewmap	;a=mapnumber
+	lda mapno
+	asl
+	asl
+	add mapno
+	add mapno
+	tax
+	lda mapinfo,x
+	sta mappointer
+	lda mapinfo+1,x
+	sta mappointer+1
+	stx temp1
+
+	lda interon
+	beq internoton
+	jsr turninterofffade
+
+internoton
+	jsr setfade
+	ldx temp1
+
+
+	ldy #0
+	lda minmap
+	cmp mapinfo+2,x
+	bcs !9
+	ldy #255
+!9
+	sec
+	sbc mapinfo+2,x
+!1	sty address+1
+	do 4
+	asl
+	rol address+1
+	loop
+	add robinxl
+	sta robinxl
+	lda address+1
+	adc robinxh
+	sta robinxh
+
+	lda mapinfo+2,x
+	sta minmap
+	lda mapinfo+3,x
+	add #-16
+	sta maxmap
+	add16toval robinxl,256+32,scrxl
+	
+	stx temp
+	ldy mapinfo+4,x
+	ldx #0
+!2	lda gamepallettes,y
+	sta fadecolours,x
+	lda spritecolours,x
+	sta fadecolours+16,x
+	iny
+	inx
+	cpx #16
+	bne !2
+
+
+	ldx temp
+	lda mapinfo+5,x
+
+	tax
+makeupchrset	stx hipos
+	lda mapchrsdefs,x
+	bmi nomorechrsformap
+	jsr copyblockofcompactedchrs
+	ldx hipos
+	inx
+	jmp makeupchrset
+nomorechrsformap
+	
+	
+
+	lda #0
+	sta counter
+	sta animatedoor
+	sta changedblockspointer
+	jsr resetdoorsintomap
+	jsr doallsecrets 
+	jsr resetextravars
+	jsr storeoutoldrobin
+
+	jsr setxscroll
+	lda robinxl
+	sec
+	sbc scrxl
+	sta robinonscrx
+
+	ldx mapno
+	lda tuneforstrip,x
+	cmp tune
+	beq playingsametune
+	jsr starttune
+playingsametune
+
+	lda #&ef-12
+	sta y.scroll
+	jmp turninteron
+;-------------------------------------
+checkoffscreen
+	ldx mapno
+	lda mapheights,x
+	sta temp
+	lda killed
+	bne !1
+	lda robiny
+	sta temp8
+	cmp #&20
+	bcc goingofftop
+	cmp #&d8
+	bcc !1
+	cmp #&f0
+	bcs goingoffbottom
+	jsr setonladdervars
+!1	rts
+goingofftop
+	lda robiny
+	add #&d0
+	sta robiny
+	inc temp
+	bne changingscreen
+goingoffbottom
+	lda robiny
+	sec
+	sbc #&d0
+	sta robiny
+	dec temp
+changingscreen
+	lda mapno
+	asl
+	asl
+	add mapno
+	add mapno
+	tay
+	ldx mapinfo+2,y
+	lda robinxl
+	add times16lo,x
+	sta address
+	lda robinxh
+	adc times16hi,x
+	sta address+1
+
+	ldx #12
+	stx temp9
+doeachmap	lda mapheights,x
+	cmp temp
+	beq possiblemap
+trynextmap	dec temp9
+	ldx temp9
+	bpl doeachmap
+	
+	lda temp8	;robin jumping of top off screen/or bottom
+	cmp #8
+	bcs !1
+	lda #8
+	bne !2
+!1	cmp #&f8
+	bcc !2
+	lda &f7
+!2	sta robiny
+	rts
+
+
+possiblemap	txa
+	asl
+	asl
+	add temp9
+	add temp9
+	tay
+	ldx mapinfo+2,y
+	lda times16hi,x
+	cmp address+1
+	bne !1
+	lda times16lo,x
+	cmp address
+!1	bcs trynextmap
+	lda mapinfo+2,y
+	add mapinfo+3,y
+	tax
+	lda times16hi,x
+	cmp address+1
+	bne !2
+	lda times16lo,x
+	cmp address
+!2	bcc trynextmap
+	
+	jsr setonladdervars
+
+	lda #0
+	sta voice1
+	sta voice2
+	sta voice3
+	sta voice4
+
+
+	lda temp9
+	sta mapno	
+	jmp gointonewmap
+;-------------------------------------
+
+
+mapinfo	;mappointer      ,offset,width,paletteused,chrsused
+;	defb >mapa-14,<mapa-14,16 ,56 ,lavapal    ,dungeonschrs
+	defb >mapb-14,<mapb-14,88 ,72 ,lavapal    ,dungeonschrs
+	defb >mapc-14,<mapc-14,32 ,32 ,waterpal   ,dungeonschrs
+	defb >mapd-14,<mapd-14,80 ,16 ,waterpal   ,dungeonschrs
+	defb >mape-14,<mape-14,128,64 ,waterpal   ,dungeonschrs
+	defb >mapf-14,<mapf-14,0  ,208,dungeonspal,dungeonschrs
+	defb >mapg-14,<mapg-14,0  ,176,kitchenspal,hallschrs   
+	defb >maph-14,<maph-14,0  ,176,hallspal   ,churchchrs   
+	defb >mapi-14,<mapi-14,16 ,160,churchpal  ,skychrs  
+	defb >mapj-14,<mapj-14,16 ,40 ,bedroomspal,churchchrs     
+;	defb >mapk-14,<mapk-14,88 ,32 ,bedroomspal,skychrs     
+	defb >mapl-14,<mapl-14,144,32 ,skypal     ,skychrs     
+	defb >mapm-14,<mapm-14,24 ,24 ,skypal     ,skychrs     
+	defb >mapn-14,<mapn-14,88 ,32 ,churchpal  ,churchchrs  
+	defb >mapo-14,<mapo-14,106,16 ,skypal     ,skychrs     
+;	defb >mapp-14,<mapp-14,104,16 ,skypal     ,skychrs     
+
+
+tuneforstrip defb 6,8,8,8,6,7,9,9,7,7,8,8,8
+
+

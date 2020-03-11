@@ -1,0 +1,423 @@
+
+
+
+
+
+
+compactedchrstable
+	;>chrdata,<chrdata,start,len,bank+128 if char
+	if absolutely=1
+ compchr cm_chrset0
+		defb >cm_chrset,<cm_chrset,0,14
+	endif
+ compchr titletopchrs0.245
+		defb >titletopchrs,<titletopchrs,0,14+128
+ compchr titlebotchrs0.245
+		defb >titlebotchrs,<titlebotchrs,0,14
+ compchr hiscorechrs0.43
+		defb >hiscorechrs,<hiscorechrs,0,14+128
+ compchr hiscorechrs0.43s
+		defb >hiscorechrs,<hiscorechrs,0,14
+ compchr basechr0.157
+		defb >basechr,<basechr,0,14+128
+ compchr beadchr157.23
+		defb >beadchr,<beadchr,157,14+128
+ compchr boxchr247.9
+		defb >boxchr,<boxchr,247,14+128
+ compchr archchr157.85
+		defb >archchr,<archchr,157,14+128
+ compchr rockchr157.99
+		defb >rockchr,<rockchr,157,14+128
+ compchr bedchr180.66
+		defb >bedchr,<bedchr,180,14+128
+ compchr doorchr180.73
+		defb >doorchr,<doorchr,180,14+128
+ compchr robinchrs0.255
+		defb >robinchrs,<robinchrs,0,14
+ compchr okchr0.1
+		defb >okchr,<okchr,0,14
+;-------------------------------
+copyblockofcompactedchrs ;a=set number from table
+	asl
+	asl	;note 64 chrs sets max (256/4)
+	tay
+	lda bankno
+	pha
+	lda compactedchrstable+3,y
+	and #15
+	jsr changebankrou
+	lda compactedchrstable+2,y
+	sta temp
+	lda compactedchrstable+3,y
+	asl
+	lda #0
+	adc #0
+	asl temp
+	rol	;*2
+	asl temp
+	rol	;*4
+	asl temp
+	rol	;*8
+	asl temp
+	rol	;*16
+	sta _vramaddr
+	lda temp	
+	sta _vramaddr
+	lda compactedchrstable+0,y
+	sta adr1l
+	lda compactedchrstable+1,y
+	sta adr1h
+	jsr pp1_unpack
+	pla
+	jmp changebankrou
+;-------------------------------------------
+
+;** PP1 character set unpacker **
+
+;8 bytes here
+PP1_ZBUF	EQU toplevvar1 ;ADR2
+;16 bytes here
+PP1_TYPES	EQU address2	;EDGE_BUF0
+PP1_FOL1	EQU PP1_TYPES+4
+PP1_FOL2	EQU PP1_TYPES+8
+PP1_FOL3	EQU PP1_TYPES+12
+
+
+;also define ADR1=ADR1L,ADR1H
+adr1	equ address1
+adr1l	equ address1
+adr1h	equ address1+1
+;also TEMP1..TEMP8
+
+
+PP1_DOWNLOAD3
+	STX ADR1l
+	sty adr1h
+	TXa
+	lda bankno
+	pha
+	txa
+	jsr changebankrou
+	jsr PP1_UNPACK
+	pla
+	jmp changebankrou		
+
+PP1_DOWNLOAD2
+	STX adr1l
+	stY ADR1h
+PP1_DOWNLOAD
+	LDX #$D
+PP1_UNPACK
+	;X=bank#, ADR1 = packed chrs, data into $2007
+	;exit: ADR1=source for next char, temp8=#chars just done
+
+;	LDA $8000
+;	PHA
+;	SETBANK X
+
+	LDY #0
+	LDA (ADR1),Y
+	STA TEMP1
+	STA TEMP8
+	INY
+	;temp1=#chrs
+
+	LDA #$80
+	STA TEMP2
+
+;*  do a character  *2
+
+PP1_CHRLOOP
+
+;* new header? *
+
+;get bit into cf
+
+	JSR PP1_GETC
+	BCS PP1_GOTHEADER
+
+;* fetch header *
+
+	LDX #3
+!HL
+;get type
+	JSR PP1_GET2
+	STA PP1_TYPES,X
+	BEQ !T0
+	LSR
+	BEQ !T1
+	BCC !T2
+
+;type 3
+
+!T3	JSR PP1_T3
+	STA PP1_FOL3,X
+	JMP !T0
+
+;type 2
+
+!T2	JSR PP1_T3
+	STA TEMP3
+	JSR PP1_GETC
+	BCC !T0
+	LDA TEMP3
+	STA PP1_FOL2,X
+	JMP !T0
+
+;type 1
+
+!T1	JSR PP1_T1
+	STA PP1_FOL1,X
+
+;type 0
+
+!T0
+	DEX
+	BPL !HL
+
+PP1_GOTHEADER
+
+	LDX #7
+PP1_GETLINE	STX TEMP3
+
+;* line repetition? *
+
+	ASL TEMP2
+	BCC !Q10
+	BNE PP1_GOTLINE
+	JSR PP1_GETQ
+	BCS PP1_GOTLINE
+!Q10
+
+;* unpack line *
+
+;first pixel
+;	ASL TEMP2
+;	BNE !Q15
+;	JSR PP1_GETQ
+;!Q15	ROL
+;	AND #1
+;	ASL TEMP2
+;	BNE !Q16
+;	TAX
+;	JSR PP1_GETQ
+;	TXA
+;!Q16	ROL
+
+	JSR PP1_GET2
+	TAX
+
+	STA TEMP4	;bpl0
+	LSR
+	ORA #2
+	STA TEMP5	;bpl1
+
+;next pixel
+!NEXT	LDA PP1_TYPES,X
+	BEQ !T0
+	ASL TEMP2
+	BCC !Q11
+	BNE !T0
+	JSR PP1_GETQ
+	BCS !T0
+!Q11
+	LDA PP1_TYPES,X
+	LSR
+	BEQ !T1
+	BCC !T2
+
+!T3	ASL TEMP2
+	BCC !Q12
+	BNE !T1
+	JSR PP1_GETQ
+	BCS !T1
+!Q12	ASL TEMP2
+	BCC !T2B
+	BNE !Q13
+	JSR PP1_GETQ
+	BCC !T2B
+!Q13	LDA PP1_FOL3,X
+	TAX
+	JMP !P
+
+!T2	ASL TEMP2
+	BCC !T1
+	BNE !Q14
+	JSR PP1_GETQ
+	BCC !T1
+!Q14
+!T2B	LDA PP1_FOL2,X
+	TAX
+	JMP !P
+
+!T1	LDA PP1_FOL1,X
+	TAX
+
+!T0	TXA
+
+!P	LSR
+	ROL TEMP4
+	LSR
+	ROL TEMP5
+	BCC !NEXT
+
+PP1_GOTLINE
+
+;* store line *
+
+	LDA TEMP4
+	STA $2007
+
+	LDX TEMP3
+	LDA TEMP5
+	STA PP1_ZBUF,X
+	DEX
+	BPL PP1_GETLINE
+
+	LDX #7
+!BPL1	LDA PP1_ZBUF,X
+	STA $2007
+	DEX
+	BPL !BPL1
+
+;* next char *
+
+	DEC TEMP1
+	BEQ !DONE
+	JMP PP1_CHRLOOP
+!DONE
+
+;* done *
+
+;	PLA
+;	SETBANK A
+	RTS
+
+
+;** get 1 bit into carry **
+
+PP1_GETC
+	ASL TEMP2
+	BEQ !H0
+	RTS
+
+!H0
+PP1_GETQ	LDA (ADR1),Y
+	INY
+	BNE !H2
+	INC ADR1H
+!H2	ROL
+	STA TEMP2
+	RTS
+
+
+;** get 2 bits into A **
+
+PP1_GET2
+
+;get b1
+	ASL TEMP2
+	BNE !20
+
+	LDA (ADR1),Y
+	INY
+	BNE !22
+	INC ADR1H
+!22	ROL
+	STA TEMP2
+!20
+	ROL
+	AND #1
+;get b2
+	ASL TEMP2
+	BEQ !21
+
+	ROL
+	;zf=1 if A=0
+	RTS
+
+!21
+	PHA
+	LDA (ADR1),Y
+	INY
+	BNE !23
+	INC ADR1H
+!23	ROL
+	STA TEMP2
+	PLA
+
+	ROL
+	;zf=1 if A=0
+	RTS
+
+
+;** get info for folcol1 **
+
+PP1_T1	JSR PP1_GETC
+	BCC !T1B
+	LDA PP1_FC1,X
+	;zf set from A
+	RTS
+!T1B	JSR PP1_GETC
+	BCS !T1C
+	LDA PP1_FC2,X
+	;zf set from A
+	RTS
+!T1C	LDA PP1_FC3,X
+	;zf set from A
+	RTS
+
+
+;** get info for folcol2 & folcol3 **
+
+PP1_T3	JSR PP1_T1
+	STA PP1_FOL1,X
+	BEQ !T3.0
+	CMP #2
+	BCC !T3.1
+	BEQ !T3.2
+!T3.3	LDA PP1_F3L,X
+	STA PP1_FOL2,X
+	LDA PP1_F3H,X
+	RTS
+!T3.2	LDA PP1_F2L,X
+	STA PP1_FOL2,X
+	LDA PP1_F2H,X
+	RTS
+!T3.1	LDA PP1_F1L,X
+	STA PP1_FOL2,X
+	LDA PP1_F1H,X
+	RTS
+!T3.0	LDA PP1_F0L,X
+	STA PP1_FOL2,X
+	LDA PP1_F0H,X
+	RTS
+
+
+;** tables **
+
+PP1_FC3	HEX 030303;02
+PP1_FC2	HEX 020201;01
+PP1_FC1	HEX 01000000
+
+PP1_F0L	EQU PP1_FC2
+	;HEX FF020101
+PP1_F0H	EQU PP1_FC3
+	;HEX FF030302
+PP1_F1L	HEX 02FF0000
+PP1_F1H	EQU PP1_FC3
+	;HEX 03FF0302
+PP1_F2L	EQU PP1_FC1
+	;HEX 0100FF00
+PP1_F2H	HEX 0303FF01
+PP1_F3L	EQU PP1_FC1
+	;HEX 010000
+PP1_F3H	EQU PP1_FC2
+	;HEX 020201
+
+
+;** end of pp1pack **
+PP1_SIZE	EQU *-PP1_DOWNLOAD3
+;341+30
+
+

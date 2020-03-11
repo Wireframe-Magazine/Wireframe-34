@@ -1,0 +1,633 @@
+	if showcoins = 1
+showcoinsrou
+	lda #&96
+	sta temp4
+	lda counter
+	and #3
+	sta temp
+	ldx #0
+checkeachcoin
+	lda coinco+1,x
+	cmp mapno
+	bne coinnotinmap
+	ldy coinco,x
+	stx temp1
+	lda times16lo,y
+	sec
+	sbc scrxl
+	sta temp3
+	lda times16hi,y	
+	sbc scrxh
+	bne coinoffedge
+	lda temp3
+	sbc #12
+	sta temp3
+	bcc coinoffedge
+	ldy #100
+	lda temp3
+	tax
+	lda temp4
+	jsr pokesprite
+coinoffedge	
+	ldx temp1
+coinnotinmap
+	inx
+	inx
+	cpx #(8*6)*2
+	bne !1
+	lda #&8c
+	sta temp4
+!1	cpx #(8*6+24)*2
+	bne checkeachcoin
+	rts
+	endif
+;--------------------------------
+restupdatecoin	
+	stx address8
+	lda onscreencount2,y
+	and #15
+	sta temp1
+	cmp #6
+	bcs nosparkle
+	lda onscreencount2,y
+	and #%11110000
+	bne !3
+	lda seed+1
+	bne nosparkle
+!3	lda onscreencount2,y
+	add #16
+	sta onscreencount2,y
+	lsr
+	lsr
+	lsr
+	lsr
+	lsr
+
+	sta temp2
+	txa
+	ldx xcoordh
+	sec
+	sbc #7
+	bcs !1
+	dex
+!1	cpx #0
+	bne !2
+	sta temp3
+	lda onscreeny,y
+	add #4
+	tay
+	lda #2
+	sta temp
+	ldx temp2
+	lda sparkle,x
+	ldx temp3
+	jsr pokesprite
+	
+!2	
+nosparkle	ldy address9
+	lda onscreeny,y
+	sta address8+1
+	jsr pickupcollision
+	bcs endcoin
+	jsr storeoutoldrobin
+
+	ldy address9
+	lda onscreenxl,y
+	sta address7
+	lda onscreenxh,y
+	sta address7+1
+	lda #0
+	sta onscreenrou,y
+
+	lda onscreencount1,y
+	tay
+	and #7
+	tax
+	tya
+	lsr
+	lsr
+	lsr
+	tay
+	lda secret+3,y
+	and bitpattern,x
+	bne !3		;coin appears to be off
+	lda secret+3,y
+	eor bitpattern,x
+	sta secret+3,y	
+
+	ldy address9
+	lda onscreencount2,y
+	and #15	
+	cmp #6
+	bcc !1
+	jsr addtohearts
+	lda #7
+	jsr startstars	;start heart explosion
+	lda #pickupheartfx
+	jsr soundfx
+	lda #&48
+	jsr addtoscore
+	jmp !2	
+!1	jsr startfloatupnumber
+	lda #6
+	jsr startstars	;start treasure explosion
+	lda #pickuptreasurefx
+	jsr soundfx
+	lda #&32
+	jsr addtoscore	
+!2
+;	ldy address9
+;	lda onscreencount1,y
+;			;collected coin
+;	tay
+;	and #7
+;	tax
+;	tya
+;	lsr
+;	lsr
+;	lsr
+;	tay
+;	lda secret+3,y
+;	eor bitpattern,x
+;	sta secret+3,y
+!3	rts	
+endcoin	ldy address9
+	lda xcoordh
+	bne !1
+
+
+	lda onscreeny,y
+	tay
+	lda temp1
+	cmp #6
+	bcs pulsingheart
+	tax
+	lda treaspal,x
+	sta temp
+
+
+
+;-------------------------------
+	lda counter	;make treasures pulse
+	lsr
+	lsr
+	and #3
+	sta temp
+;-------------------------------
+
+	lda temp1
+	asl
+	asl
+	add #&cc
+	ldx address8
+	jmp pokesprite2by2 
+!1	rts
+pulsingheart lda #3
+	sta temp
+	tya
+	add #12
+	tay
+	lda counter
+	lsr
+	lsr
+	lsr
+	and #3
+	tax
+	lda heartsdefs,x
+	ldx address8
+	dex
+	dex
+	dex
+	dex	
+	jmp pokesprite
+sparkle	defb &8d,&8d,&8e,&8e,&8f,&8e,&8d,&8d
+;-------------------------------
+putinheartbank
+	lda mapno
+
+findinitcoin	cmp coinco+1,y
+	bne !2
+	lda coinco,y
+	cmp blockx
+	beq gotrightcoin
+	lda mapno
+!2	iny
+	iny
+	cpy #(8*6+24)*2
+	bne findinitcoin
+	dey
+	dey
+gotrightcoin
+	tya
+	lsr
+	sta onscreencount1,x
+	lsr
+	lsr
+	lsr
+	sta onscreencount2,x
+		
+gotcoin	tya
+	lsr
+	stx temp	;check if treasure already collected
+	tax
+	and #7
+	tay
+	txa
+	lsr
+	lsr
+	lsr
+	tax
+	lda secret+3,x
+	ldx temp
+	and bitpattern,y
+	beq !1
+	lda #0
+	sta onscreenrou,x
+	rts
+!1	lda #8
+	jsr onscrxandy
+	lda onscreeny,x
+	add #8
+	sta onscreeny,x
+	rts
+
+;--------------------------------
+	;48 treasures  48 hearts
+
+coinco
+;treasure chests
+	defb 17,5		;1.
+	defb 44,5		;2.
+	defb 89,5		;3.
+	defb 50,4		;4.
+	defb 42,4		;5.
+	defb 22,4		;6.
+	defb 10,4		;7.
+	defb 25,1		;8.
+;gold crowns
+	defb 68,4		;9.
+	defb 98,4		;10.
+	defb 118,5		;11.
+	defb 123,4		;12.
+	defb 14,2		;13.
+	defb 28,0		;14.
+	defb 44,0		;15.
+	defb 52,0		;16.
+;diamonds
+	defb 17,3		;17.
+	defb 65,0		;18.
+	defb 38,3		;19.
+	defb 62,3		;20.
+	defb 204,4		;21.
+	defb 179,4		;22.
+	defb 149,4		;23.
+	defb 166,4		;24.
+;gold shield
+	defb 157,5		;25.
+	defb 137,5		;26.
+	defb 169,6		;27.
+	defb 157,7		;28.
+	defb 145,6		;29.
+	defb 131,7		;30.
+	defb 31,9		;31.
+	defb 3,9		;32.
+;gold goblet
+	defb 118,7		;33.
+	defb 98,6		;34.
+	defb 76,6		;35.
+	defb 98,7		;36.
+	defb 27,11		;37.
+	defb 68,7		;38.
+	defb 65,6		;39.
+	defb 7,6		;40.
+;rubys
+	defb 32,7		;41.
+	defb 11,7		;42.
+	defb 13,8		;43.
+	defb 9,10		;44.
+	defb 23,10		;45.
+	defb 38,8		;46.
+	defb 53,7		;47.
+	defb 8,11		;48.
+
+;---------------------------------------------- HEARTS
+
+
+;hearts
+	defb 57,5		;1.
+	defb 41,4		;2.
+	defb 16,1		;3.
+	defb 73,4		;4.
+	defb 5,2		;5.
+	defb 108,4		;6.
+	defb 103,5		;7.
+	defb 131,5		;8.
+;hearts
+	defb 17,0		;9.
+	defb 68,0		;10.
+	defb 199,4		;11.
+	defb 140,4		;12.
+	defb 171,5		;13.
+	defb 174,6		;14.
+	defb 136,6		;15.
+	defb 144,7		;16.
+;hearts
+	defb 19,9		;17.
+	defb 86,7		;18.
+	defb 101,6		;19.
+	defb 38,6		;20.
+	defb 37,7		;21.
+	defb 5,7		;22.
+	defb 19,8		;23.
+	defb 12,11		;24.
+
+;hearts
+;	defb 49,0		;25
+;	defb 62,0		;26
+;	defb 16,3		;27
+;	defb 44,3		;28
+;	defb 61,3		;29
+;	defb 26,4		;30
+;	defb 52,4		;31
+;	defb 102,4		;32
+;
+;hearts
+;	defb 162,4		;33
+;	defb 27,5		;34
+;	defb 135,5		;35
+;	defb 28,6		;36
+;	defb 86,6		;37
+;	defb 152,6		;38
+;	defb 6,7		;39
+;	defb 52,7		;40
+;
+;hearts
+;	defb 65,7		;41
+;	defb 111,7		;42
+;	defb 27,8		;43
+;	defb 13,10		;44
+
+;--------------------------------
+startfloatupnumber
+	lda onscreencount2,y
+	and #15
+	tax
+	dec treasures,x
+	lda treasures,x
+	sta coinnum
+!1	lda onscreencount1,y
+	asl
+	tax
+	lda coinco,x
+	sta coinnumx
+	lda onscreeny,y
+	sta coinnumy
+	lda #64
+	sta coinnumcount
+	rts
+	
+;------------------------------------
+floatupnumber
+	lda coinnumy
+	beq !end
+	lda coinnumcount
+	beq !end
+	lda counter
+	lsr
+	lsr
+	and #3
+	sta temp
+	lda counter
+	and #1
+	bne !3
+	dec coinnumcount
+	dec coinnumy
+!3
+	ldy coinnumy
+	ldx coinnumx
+	lda times16lo-1,x
+	add #6
+	sec
+	sbc scrxl
+	sta temp1
+	lda times16hi-1,x
+	sbc scrxh
+	bne !end
+	lda coinnum
+	add #&80
+	ldx temp1
+	jsr pokesprite
+!end	rts
+;--------------------------------------
+
+printlivesinfomess defb mgosub
+	defw clearscr
+	defb maddr+&23,&c0,mloop,64,mlen,1,&ff,mendloop
+	cbm maddr+&20,&8d,"SCORE"
+	cbm maddr+&21,&4e,"LIVES"
+	cbm maddr+&22,&46,"TREASURE TO COLLECT"
+	defb maddr+&23,&d2,mlen,3,&aa,&aa,&aa
+	cbm mend
+livesbit	defb gameoverbit-life1mess,0,lives2mess-life1mess,lives3mess-life1mess,lives4mess-life1mess
+	defb lives5mess-life1mess,lives6mess-life1mess
+life1mess	cbm maddr+&21,&4c,34," LIFE ",mend
+lives2mess	cbm maddr+&21,&4c,35,mend
+lives3mess	cbm maddr+&21,&4c,36,mend
+lives4mess	cbm maddr+&21,&4c,37,mend
+lives5mess	cbm maddr+&21,&4c,38,mend
+lives6mess	cbm maddr+&21,&4c,39,mend
+gameoverbit	cbm maddr+&21,&4b,"GAME OVER",mend
+
+completedgamemessage
+	cbm maddr+&21,&4b,"         "
+	cbm maddr+&20,&ec,"THE END"
+	cbm maddr+&21,&c8,"CONGRATULATIONS",27
+	cbm maddr+&22,&01
+	cbm " AFTER EXPLORING AND FIGHTING",mdownline
+	cbm " YOUR WAY HEROICALLY THROUGH",mdownline
+	cbm " THE DEADLY NOTTINGHAM CASTLE",mdownline
+	cbm " YOU HAVE EVENTUALLY RESCUED",mdownline
+	defb mjump
+	defw completed2
+completed2
+	cbm " YOUR TRUE LOVE MAID MARION",27,mdownline
+	defb mloop,28," ",mendloop,mdownline
+	cbm "   YOU HAVE ALSO RECOVERED",mdownline
+	cbm "   ALL THE STOLEN TREASURE",mdownline,mdownline
+	cbm "KING RICHARD WILL RETURN SOON^",mdownline,mdownline
+	cbm "     LONG LIVE THE KING",27
+	cbm mend
+
+treasureleftmess
+	defb &22,&a8,1,00
+	defb &22,&b0,1,00
+	defb &22,&b8,1,00
+	defb &23,&28,1,00
+	defb &23,&30,1,00
+	defb &23,&38,1,00
+;---------------------------------------
+print6treasures
+	jsr addsparkletotreasures
+
+	ldx #5
+!2	stx address9
+	lda treaspal,x
+	sta temp
+	ldy showalltreasure+6,x
+	lda showalltreasure,x
+	tax
+	lda address9
+	asl
+	asl
+	add #&cc
+	jsr pokesprite2by2
+	dec address9
+	ldx address9
+	bpl !2
+	rts
+showalltreasure
+	defb 64-16,128-16,192-16,64-16,128-16,192-16
+	defb 160,160,160,192,192,192	
+;----------------------------------------
+addsparkletotreasures
+	ldx #1
+donextsparkle
+	lda heartstable+8,x
+	bne alreadygotsparkle
+	lsr seed
+	bcc nextsparkle
+	lda seed+2
+	and #7
+	cmp #6
+	bcs nextsparkle
+	
+	tay
+	lda seed+1
+	and #7
+	add #-4
+	add showalltreasure,y
+	sta heartstable,x
+	lda seed+1
+	and #7
+	add #2
+	add showalltreasure+6,y
+	sta heartstable+4,x
+	lda #7*4
+	sta heartstable+8,x
+alreadygotsparkle
+	dec heartstable+8,x
+	lda heartstable+8,x
+	lsr
+	lsr
+	tay
+	lda #2
+	sta temp
+	lda heartstable,x
+	sta temp1
+	stx temp2
+	lda sparkle,y
+	ldy heartstable+4,x
+	ldx temp1
+	jsr pokesprite
+	ldx temp2
+nextsparkle	dex
+	bpl donextsparkle
+	rts
+;---------------------------------------
+redefinewater
+	lda mapno
+	cmp #5
+	bcs !1
+	ldy vrampointer
+	lda counter
+	lsr
+	lsr
+	and #%00000110
+	tax
+	
+	lda #<(&fe*16+&1008)
+	sta vrambuffer,y
+	lda #>(&fe*16+&1008)
+	sta vrambuffer+1,y
+	lda #2
+	sta vrambuffer+2,y
+	lda waterchrs,x
+	sta vrambuffer+3,y
+	lda waterchrs+1,x
+	sta vrambuffer+4,y
+
+	lda counter
+	lsr
+	and #%00000110
+	tax
+
+	lda #<(&ff*16+&1000)
+	sta vrambuffer+5,y
+	lda #>(&ff*16+&1000)
+	sta vrambuffer+6,y
+	lda #2
+	sta vrambuffer+7,y
+	lda waterchrs+8,x
+	sta vrambuffer+8,y
+	lda waterchrs+9,x
+	sta vrambuffer+9,y
+
+	lda #<(&ff*16+&1008)
+	sta vrambuffer+10,y
+	lda #>(&ff*16+&1008)
+	sta vrambuffer+11,y
+	lda #2
+	sta vrambuffer+12,y
+	lda waterchrs+8,x
+	sta vrambuffer+13,y
+	lda waterchrs+9,x
+	sta vrambuffer+14,y
+	tya
+	add #15
+	sta vrampointer
+
+!1	rts
+;--------------------------------
+
+secrettable	defw secret0,secret1,secret2,secret3,secret4
+	defw secret5,secret6,secret7,secret8,secret9
+	defw secret10,secret11,secret12,secret13
+	defw secret14,secret15,secret16,secret17
+	defw secret18,secret19,secret20,secret21
+	defw secret22,secret23
+
+secret0	defb 5-1 ,38 , 6,&20,255		          ;poke ladder
+secret1	defb 5-1 ,4  ,10,&00,5-1,4,11,&00,255         ;poke hole in shaft
+secret2	defb 8-1 ,153,12,&ad,8-1,154,12,&ab,255	;slide under ledge
+secret3	defb 7-1 ,174,8 ,&f8,255		          ;under ladder
+secret4	defb 11-2,10 ,11,&00,11-2,11,11,&00
+  	defb 11-2,10 ,12,&00,11-2,11,12,&00,255       ;bash thru castle turret
+secret5	defb 8-1 ,102,0 ,&20,8-1 ,102,1,&20
+	defb 8-1 ,102,2 ,&20,8-1 ,102,3,&ad,255       ;ladder down
+secret6	defb 12-2,22,12 ,&20,12-2,22,13,&20,255       ;make ladder
+secret7	defb 5-1 ,189,4 ,&4a,5-1,190,4,&49,255        ;trap door
+secret8	defb 2-1 ,25 ,4,&20,2-1 ,25 ,5,&20,2-1 ,25 ,6,&20
+	defb 2-1 ,25 ,7,&20,2-1 ,25 ,8,&20,2-1 ,25 ,9,&20,255 ;ladder ext
+secret9	defb 6-1 ,113,0,&24,255			;opens chain
+secret10	defb 1-1 ,2  ,7,&20,1-1 ,2  ,6,&20,1-1,2,5,&20,1-1,2,4,&20,1-1,2,3,&20
+	defb 1-1 ,2  ,2,&20,1-1,2,1,&20,1-1,2,0,&20,255   ;ladder in wall
+secret11	defb 6-1 ,119,6,&00,6-1,119,7,&00,255	;knock out wall by ladder
+secret12	defb 9-1 ,25,12,&11,9-1,36,10,&2b,255	;moving stool
+secret13	defb 8-1 ,7 ,12,&ad,255			;get imposible heart
+secret14	defb 6-1 ,35,12,&00,6-1,36,12,&00,6-1,37,12,&00,255 ;first cheat
+secret15	defb 5-1 ,2,2,&4,255			;knock out ball and chain
+secret16	defb 5-1 ,38,12,&20,5-1,38,11,&20,5-1,37,12,&4b,255 ;ladder grow down
+secret17	defb 7-1 ,16,11,&4b,7-1,16,12,&49,255	;remove wall
+secret18	defb 7-1 ,40,10,&49,7-1,41,10,&49,7-1,42,10,&49,255 ;knock out slide
+secret19	defb 7-1 ,133,7,&20,7-1,133,8,&20,255	;grow down ladder
+secret20	defb 11-2,14,8,&f8,255			;block infront of guard
+secret21	defb 8-1,150,5,&ab,255			;drop floor away
+secret22	defb 6-1,1,11,0,6-1,2,11,0,6-1,1,12,0,6-1,2,12,0,255 ;cheat at beginning
+
+secret23	defb 6-1,138,12,&25,6-1,138,11,&25,255	;barrels
+	defb 255
+
+
+
+
+

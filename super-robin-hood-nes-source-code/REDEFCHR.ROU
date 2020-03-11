@@ -1,0 +1,122 @@
+
+
+
+setsofchrstable
+	;>chrdata,<chrdata,start,len,bank+128 if char
+; chrvar alphachrs0.43
+;		defb >alphachrs,<alphachrs,0,43,14+128
+; chrvar titletopchrs0.255
+;		defb >titletopchrs,<titletopchrs,0,245,14+128
+; chrvar titlebotchrs0.255
+;		defb >titlebotchrs,<titlebotchrs,0,245,14
+; chrvar robinchrs0.255
+;		defb >robinchrs,<robinchrs,0,255,14
+; chrvar solidchr255.1
+;		defb >solidchr,<solidchr,255,1,14+128
+; chrvar solidchr255.1s
+;		defb >solidchr,<solidchr,255,1,14
+;----------------
+; chrvar basechr0.157
+;		defb >basechr,<basechr,0,157,14+128
+; chrvar beadchr157.23
+;		defb >beadchr,<beadchr,157,23,14+128
+; chrvar boxchr247.9
+;		defb >boxchr,<boxchr,247,9,14+128
+; chrvar archchr157.85
+;		defb >archchr,<archchr,157,85,14+128
+; chrvar rockchr157.99
+;		defb >rockchr,<rockchr,157,99,14+128
+; chrvar bedchr180.66
+;		defb >bedchr,<bedchr,180,66,14+128
+; chrvar doorchr180.73
+;		defb >doorchr,<doorchr,180,73,14+128
+;
+;
+;---------------------------------------------------------------
+copyblockofchrs ;a=set number from table
+	sta toplevvar7
+	asl
+	asl
+	add toplevvar7	;note 51 chrs sets max (256/5)
+	tay
+	lda bankno
+	pha
+	lda setsofchrstable+4,y
+	and #15
+	jsr changebankrou
+	lda setsofchrstable+3,y
+	sta toplevvar7
+	lda setsofchrstable+2,y
+	pha
+	lda setsofchrstable+4,y
+	asl 			;sets carry for chr set
+	ldx setsofchrstable+0,y
+	lda setsofchrstable+1,y
+	tay
+	pla
+	jsr restofcopychrscom
+	pla
+	jmp changebankrou
+;--------------------------------------------------------------------
+chrpointer	equ toplevvar3
+
+copysetofchrscom	;;;;X	EQU low of chrs  Y=hi of chrs     COMPACTED
+		;;;;A	EQU char to start   TEMP=number to copy
+	sec
+	bcs restofcopychrscom
+copysetofsprscom 
+	clc
+restofcopychrscom
+	pha
+	lda #0
+	adc #0
+	sta toplevvar2
+	pla
+	stx chrpointer
+	sty chrpointer+1
+	ldy #0
+	asl
+	rol toplevvar2	;*2
+	asl
+	rol toplevvar2	;*4
+	asl
+	rol toplevvar2	;*8
+	asl
+	rol toplevvar2	;*16
+	tax
+	lda toplevvar2
+	sta _vramaddr
+	stx _vramaddr
+	ldy #0
+copyineachchrcom
+	lda (chrpointer),y
+	and #15
+	sta toplevvar5		;;no of repeats
+	lda (chrpointer),y
+	lsr
+	lsr
+	lsr
+	lsr
+	inca
+	sta toplevvar6		;;repeat after	
+	ldx #16
+copyinchrlinecom
+	incr chrpointer
+	lda (chrpointer),y
+	sta _vramdata
+	dec toplevvar6
+	bne notrepeats
+dorepeats	dex
+	beq endcopycom
+	sta _vramdata
+	dec toplevvar5
+	bne dorepeats
+notrepeats	dex
+	bne copyinchrlinecom
+endcopycom	incr chrpointer
+	dec toplevvar7
+	bne copyineachchrcom
+	rts
+;--------------------------------------------
+
+

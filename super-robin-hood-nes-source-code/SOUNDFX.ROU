@@ -1,0 +1,1290 @@
+
+	if musicon=1
+
+
+
+;SOUND FX
+;0	=TAP
+;1	;=PING
+;2	=WHOOSH
+;3	=CLICK
+;4	=CLICK2
+;5	=LOUD_TAP
+;6	=DELETE
+;7	=BULLET HITTING BUILDING
+;8	=MISSILE LAUNCHING
+;9	=HEAT SEEKER ALARM  (CALL REPEATEDLY)
+;10	=used with above
+;11	=ENEMY FIRING
+;12	=FIRING TRACER BULLET
+;13	=used for above
+;14	=BOMB EXPLODING ON GROUND
+;15	=SHIELD LOW ALARM   (CALL REPEATEDLY)
+;16	=FUEL LOW ALARM	(CALL REPEATEDLY)
+;17	=PING FOR SCORE
+;18	=PING FOR ANOTHER SCORE
+;19	=CLICK FOR OUT OF BULLETS
+;20	=THUD FOR OUT OF BOMBS
+;21	=BULLET HITTING ENEMY
+;22	=used for above
+;23	=DROPPING BOMB
+;24	=BOMB IN WATER
+;25	=LITTLE EXPLOSION
+;26	=LITTLE EXPLOSION
+;27	=LITTLE EXPLOSION
+;28	=LITTLE EXPLOSION
+;29	=LARGE EXPLOSION
+;30	=VERY LARGE EXPLOSION
+;31	=used for above
+
+
+pickupheartfx	equ 1
+pickuptreasurefx	equ 1
+pickupkeyfx		equ 17
+killyoutotallyfx	equ 30
+killyoufx		equ 28
+killthemtotallyfx	equ 29
+killthemfx		equ 27
+doorliftingfx	equ 4
+arrowhitwallfx	equ 32;7
+spitfx		equ 33
+bathitfx		equ 26
+trampfx		equ 21
+themfiringfx		equ 11
+breathingfirefx	equ 8
+ballbouncefx		equ 16
+batsquelfx		equ 15
+ratsquelfx		equ 34
+firstappearfx	equ 2
+extralifefx		equ 36
+
+chooseletterfx	equ 35
+deleteletterfx	equ 6
+leftrightletterfx	equ 5
+
+youfiringfx		equ 11
+
+
+;;MUSIC
+;;0	=turn off
+;;1	=story line
+;;2	=intro sequence
+;;3	=DONT KNOW YET    BUT GOOD TUNE
+;;4	=lauch from ship
+;;5	=type writer
+;;6	=completed game
+;
+;
+;
+;
+
+
+
+
+	;var NOTEVALUE,4	;	DV 5-1
+
+	;VAR ECHODEL,4
+	;VAR NEXTNOTE,4
+	;VAR NEXTLOW,4
+	;VAR NEXTHIGH,4
+	;VAR OFFSET,1
+ 	;zVAR VFX_TEMPZ,2
+
+	zvar FX_TEMP,1	;	DS 1	;
+	zvar FX_AD1L,1	;	DS 1	;
+	zvar FX_AD1H,1	;	DS 1	;
+FX_AD1	equ fx_ad1l
+	zvar fFX_AD1L,1	;	DS 1	;
+	zvar fFX_AD1H,1	;	DS 1	;
+fFX_AD1	equ ffx_ad1l
+
+
+	zvar FX_AD2L,1	;	DS 1	;
+	zvar FX_AD2H,1	;	DS 1	;
+FX_AD2	equ fx_ad2l
+	zvar fFX_AD2L,1	;	DS 1	;
+	zvar fFX_AD2H,1	;	DS 1	;
+fFX_AD2	equ ffx_ad2l
+
+
+	var FX_COUNTERZ,1	;	DS 1
+	var FX_TEMPZ,2	;	DS 2	;
+	var FX_VOL1,4	;	DS 4
+	var FX_VOL2,4	;	DS 4
+	var FX_VOLUME,4	;	DS 4
+	var FX_ATCK,4	;	DS 4
+	var FX_DEL,4	;	DS 4
+	var FX_TIME,4	;	DS 4
+	var FX_PLS,4	;	DS 4
+	var FX_ON,4	;	DS 4
+	var FX_DATA1,4	;	DS 4
+	var FX_POSITION,4	;	DS 4
+	var FX_POINTL,4	;	DS 4
+	var FX_POINTH,4	;	DS 4
+	var FX_CYCLES,4	;	DS 4
+	var FX_PRIORITY,4	;	DS 4
+	var FX_VOICES,16	;	DS 16
+	var FX_REAL_SAVE,1	;	DS 1
+
+***********
+*Macros...*
+***********
+
+PRIORITY	MACRO
+	DB @1
+	ENDM
+
+CHANNEL	MACRO
+	DB @1
+	ENDM
+
+ATK_DEC	MACRO
+	DB @1
+	ENDM
+
+FX_PULSE	MACRO
+	DB @1*64
+	ENDM
+
+MIN_MAX_VOL	MACRO
+	DB @1
+	ENDM
+
+MIN_VOL	MACRO
+	DB @1
+	ENDM
+
+
+START_NOTE	MACRO
+	DB @1
+	ENDM
+
+FX_RISE	MACRO
+	DB 5,@1,@2
+	ENDM
+
+FX_FALL	MACRO
+	DB 6,@1,@2
+	ENDM
+
+FX_UP	MACRO
+	DB 1,@1,@2
+	ENDM
+
+FX_DOWN	MACRO
+	DB 2,@1,@2
+	ENDM
+
+FX_NOTE	MACRO
+	DB 3,@1,1
+	ENDM
+
+FX_WAIT	MACRO
+	DB 4,0,@1
+	ENDM
+
+FX_TRIGGER	MACRO
+	DB 7,@1,1
+	ENDM
+
+FX_STOP	MACRO
+	DB 0
+	ENDM
+
+************************************************************
+
+**************************************************
+*Sound FX Driver for the Nintendo 8-bit console  *
+*(c) 1990 G.Raeburn                              *
+*6502 Assembly source                            *
+**************************************************
+
+
+FX_TO_DO	= 23
+
+**************************************************
+
+;SOUND FX
+;0	=TAP
+;1	;=PING
+;2	=WHOOSH
+;3	=CLICK
+;4	=CLICK2
+;5	=LOUD_TAP
+;6	=DELETE
+;7	=BULLET HITTING BUILDING
+;8	=MISSILE LAUNCHING
+;9	=HEAT SEEKER ALARM  (CALL REPEATEDLY)
+;10	=used with above
+;11	=ENEMY FIRING
+;12	=FIRING TRACER BULLET
+;13	=used for above
+;14	=BOMB EXPLODING ON GROUND
+;15	=SHIELD LOW ALARM   (CALL REPEATEDLY)
+;16	=FUEL LOW ALARM	(CALL REPEATEDLY)
+;17	=PING FOR SCORE
+;18	=PING FOR ANOTHER SCORE
+;19	=CLICK FOR OUT OF BULLETS
+;20	=THUD FOR OUT OF BOMBS
+;21	=BULLET HITTING ENEMY
+;22	=used for above
+;23	=DROPPING BOMB
+;24	=BOMB IN WATER
+;25	=LITTLE EXPLOSION
+;26	=LITTLE EXPLOSION
+;27	=LITTLE EXPLOSION
+;28	=LITTLE EXPLOSION
+;29	=LARGE EXPLOSION
+;30	=VERY LARGE EXPLOSION
+;31	=used for above
+
+;
+;pickupheartfx	equ 1
+;pickuptreasurefx	equ 1
+;pickupkeyfx		equ 17
+;killyoutotallyfx	equ 30*
+;killyoufx		equ 28
+;killthemtotallyfx	equ 29*
+;killthemfx		equ 27
+;doorliftingfx	equ 4
+;arrowhitwallfx	equ 7
+;spitfx		equ 8
+;bathitfx		equ 26
+;trampfx		equ 21
+;themfiringfx	equ 11
+;breathingfirefx	equ 27
+;ballbouncefx	equ 16
+;batsquelfx		equ 15
+;ratsquelfx		equ 34
+;firstappearfx	equ 2
+;
+;chooseletterfx	equ 5
+;deleteletterfx	equ 6	
+
+;youfiringfx		equ 12
+
+FX_TABLE
+	DW !TAP,!PING,!WHOOSH,!CLICK2,!CLICK,!BLIP,!DELETE
+	DW !THUD,!BREATH,!SIREN,!SIRENB,!BANG1,!BANG2,!THUD2,!BANG3
+	DW !BAT_SQUEAK,!BOUNCE,!PINGA,!PINGB,!HAHA,!HOHO,!BOING,!METAL2
+	DW !DROP_EM,!SPLASH
+	DW !EXPLODE1,!EXPLODE3,!EXPLODE2,!EXPLODE4
+	DW !MAJOR,!VERY_MAJOR,!BIGGIE,!ARROW,!SPIT,!RAT_SQUEAK
+	DW !CHOOSE_LETTER,!EXTRA_LIFE,!metal_ball
+
+**************************************************
+
+
+!TAP
+	PRIORITY	10
+	CHANNEL		3;0
+	ATK_DEC		$01
+	FX_PULSE	3
+	MIN_MAX_VOL	$0F
+	START_NOTE	84;3
+
+	FX_UP		3,2
+	FX_STOP
+
+	;FX_NOTE	72
+	;FX_TRIGGER	1
+	;FX_DOWN 	2,20
+	;FX_UP	 	2,20
+
+
+!PING
+	PRIORITY	10
+	CHANNEL		2
+	ATK_DEC		$0A
+	FX_PULSE	2
+	MIN_MAX_VOL	$0D
+	START_NOTE	48
+
+	FX_WAIT		5
+
+	FX_NOTE		48+4
+	FX_WAIT		5
+
+	FX_NOTE		48+7
+	FX_WAIT		5
+
+	FX_NOTE		48+12
+	FX_WAIT		5
+
+	FX_STOP
+!PING2
+	PRIORITY	10
+	CHANNEL		1
+	ATK_DEC		$0D
+	FX_PULSE	2
+	MIN_MAX_VOL	$04
+	START_NOTE	52-12
+
+	FX_WAIT		20
+	FX_STOP
+
+!WHOOSH
+	PRIORITY	40
+	CHANNEL		3
+	ATK_DEC		$4F
+	FX_PULSE	0
+	MIN_MAX_VOL	$0A
+	START_NOTE	27
+
+	FX_FALL		1,40
+	FX_STOP
+
+!CLICK
+	PRIORITY	10
+	CHANNEL		2;0
+	ATK_DEC		$00
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	67
+
+	FX_TRIGGER	3
+	FX_DOWN		72,2
+	FX_STOP
+!CLICK2
+	PRIORITY	10
+	CHANNEL		3;0
+	ATK_DEC		$0F
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	34
+
+	FX_WAIT		4
+	FX_STOP
+
+!BLIP
+	PRIORITY	10
+	CHANNEL		2;0
+	ATK_DEC		$01
+	FX_PULSE	3
+	MIN_MAX_VOL	$0A;F
+	START_NOTE	62
+
+	FX_WAIT		1
+	FX_STOP
+
+!DELETE
+	PRIORITY	10
+	CHANNEL		1;0
+	ATK_DEC		$0D
+	FX_PULSE	2
+	MIN_MAX_VOL	$0F
+	START_NOTE	36
+
+	FX_DOWN		135,3
+	FX_STOP
+
+
+!THUD
+	PRIORITY	10
+	CHANNEL		2;0
+	ATK_DEC		$00
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	35
+
+	FX_DOWN		80,1
+	FX_STOP
+
+!ARROW	;32
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$00
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	60
+
+	;FX_WAIT		1
+
+	FX_NOTE		58
+	;FX_WAIT		1
+
+	FX_STOP
+
+
+!SPIT	;32
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$01
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	49
+
+	FX_DOWN		100,5
+	FX_STOP
+
+!BREATH
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$6F
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	33
+
+	FX_WAIT		30
+	;FX_TRIGGER	7
+	;FX_DOWN		1,19
+	;FX_NOTE	31
+	;FX_FALL		4,20
+	FX_STOP
+
+!SIREN
+	PRIORITY	10
+	CHANNEL		0
+	ATK_DEC		$0F
+	FX_PULSE	0
+	MIN_MAX_VOL	$88
+	START_NOTE	24
+
+	FX_TRIGGER	10
+	FX_UP		6,30
+	FX_STOP
+!SIRENB
+	PRIORITY	10
+	CHANNEL		1
+	ATK_DEC		$0F
+	FX_PULSE	0
+	MIN_MAX_VOL	$88
+	START_NOTE	24
+
+	FX_UP		7,30
+	FX_NOTE		24
+	FX_STOP
+
+!BANG1
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$0B
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	12
+
+	;FX_TRIGGER	7
+	FX_DOWN		4,3
+	FX_STOP
+
+!BANG2
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$04;C
+	FX_PULSE	0
+	MIN_MAX_VOL	$06
+	START_NOTE	12
+
+	;FX_TRIGGER	13
+	FX_UP		20,4;94,4
+	FX_STOP
+
+!THUD2
+	PRIORITY	10
+	CHANNEL		0
+	ATK_DEC		$0F
+	FX_PULSE	2
+	MIN_MAX_VOL	$0F
+	START_NOTE	24
+
+	FX_DOWN		60,10
+	FX_STOP
+
+!BANG3
+	PRIORITY	10
+	CHANNEL		3;0
+	ATK_DEC		$0C
+	FX_PULSE	2
+	MIN_MAX_VOL	$0F
+	START_NOTE	34
+
+	FX_TRIGGER	7
+	FX_WAIT		20
+	FX_STOP
+
+!BAT_SQUEAK
+	PRIORITY	10
+	CHANNEL		1
+	ATK_DEC		$0F
+	FX_PULSE	2
+	MIN_MAX_VOL	$06
+	START_NOTE	60
+
+	FX_UP		8,3
+
+	FX_NOTE		0
+	FX_WAIT		4
+
+	FX_NOTE		60
+	FX_UP		8,3
+
+	FX_STOP
+
+!RAT_SQUEAK
+	PRIORITY	10
+	CHANNEL		1
+	ATK_DEC		$0F
+	FX_PULSE	2
+	MIN_MAX_VOL	$08
+	START_NOTE	54
+
+	FX_UP		8,2
+
+	FX_STOP
+
+!CHOOSE_LETTER
+	PRIORITY	10
+	CHANNEL		2;0
+	ATK_DEC		$01
+	FX_PULSE	3
+	MIN_MAX_VOL	$0F
+	START_NOTE	70
+
+	FX_DOWN		40,3
+	FX_STOP
+
+!EXTRA_LIFE
+	PRIORITY	12
+	CHANNEL		2;0
+	ATK_DEC		$01
+	FX_PULSE	3
+	MIN_MAX_VOL	$0A;F
+	START_NOTE	60+5
+
+	FX_WAIT		3
+	FX_NOTE		0
+	FX_WAIT		3
+
+	FX_NOTE		60+5
+	FX_WAIT		3
+	FX_NOTE		0
+	FX_WAIT		3
+
+	FX_NOTE		60-2+5
+	FX_WAIT		3
+	FX_NOTE		0
+	FX_WAIT		3
+
+	FX_NOTE		60+5
+	FX_WAIT		6
+
+	FX_STOP
+
+
+!BOUNCE	;16
+	PRIORITY	10
+	CHANNEL		2
+	ATK_DEC		$0F
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	26
+
+	FX_TRIGGER	37
+	FX_UP		32,3
+	FX_STOP
+
+!METAL_BALL	;37
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$0A
+	FX_PULSE	0
+	MIN_MAX_VOL	$0A
+	START_NOTE	34
+
+	FX_UP		75,4
+	FX_STOP
+
+!PINGB
+	PRIORITY	10
+	CHANNEL		0
+	ATK_DEC		$0C
+	FX_PULSE	2
+	MIN_MAX_VOL	$0D
+	START_NOTE	36
+
+	FX_WAIT		20
+	FX_STOP
+
+!PINGA
+	PRIORITY	10
+	CHANNEL		2
+	ATK_DEC		$0C
+	FX_PULSE	1
+	MIN_MAX_VOL	$0D
+	START_NOTE	48
+
+	FX_WAIT		6
+
+	FX_NOTE		48+3
+	FX_WAIT		6
+
+	FX_NOTE		48+7
+	FX_WAIT		6
+
+	FX_NOTE		48+3
+	FX_WAIT		6
+
+	FX_NOTE		48+7
+	FX_WAIT		6
+
+	FX_NOTE		60
+	FX_WAIT		6
+
+	FX_STOP
+
+!HAHA
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$04;C
+	FX_PULSE	0
+	MIN_MAX_VOL	$06
+	START_NOTE	13
+
+	FX_UP		1,1;95-1,4
+	FX_STOP
+
+
+!HOHO
+	PRIORITY	10
+	CHANNEL		2
+	ATK_DEC		$04;C
+	FX_PULSE	0
+	MIN_MAX_VOL	$06
+	START_NOTE	36-5
+
+	FX_DOWN		12,3
+	FX_STOP
+
+!BOING
+	PRIORITY	12
+	CHANNEL		1
+	ATK_DEC		$0F
+	FX_PULSE	2
+	MIN_MAX_VOL	$0F
+	START_NOTE	24;80
+
+	FX_UP		4,24
+
+	FX_STOP
+
+!METAL2
+	PRIORITY	10
+	CHANNEL		2
+	ATK_DEC		$01
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	72+5
+
+	FX_FALL		36,2
+	FX_STOP
+
+!DROP_EM
+	PRIORITY	10
+	CHANNEL		1
+	ATK_DEC		$0F
+	FX_PULSE	2
+	MIN_MAX_VOL	$05
+	START_NOTE	36-5
+
+	FX_FALL		16,45
+	FX_STOP
+
+!SPLASH
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$0B
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	53
+
+	FX_FALL		1,40
+	FX_STOP
+
+!EXPLODE1
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$0D
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	10
+
+	FX_WAIT		40
+	FX_STOP
+
+!EXPLODE2	;27
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$0D
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	18
+
+	FX_DOWN		129,10
+	FX_STOP
+
+!EXPLODE3	;26
+	PRIORITY	10
+	CHANNEL		0
+	ATK_DEC		$0f
+	FX_PULSE	0
+	MIN_MAX_VOL	$0f
+	START_NOTE	48
+
+	fx_wait		3
+	FX_up		14,3
+	FX_STOP
+!EXPLODE4
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$0D
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	22
+
+	FX_DOWN		40,40
+	FX_STOP
+
+!MAJOR	;30
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$0E
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	13
+
+	FX_TRIGGER	13
+	FX_FALL		91,30
+	FX_STOP
+
+!VERY_MAJOR
+	PRIORITY	10
+	CHANNEL		3
+	ATK_DEC		$0F
+	FX_PULSE	0
+	MIN_MAX_VOL	$0F
+	START_NOTE	18;12
+
+	FX_TRIGGER	13
+	FX_TRIGGER	31
+	FX_FALL		1,32
+	FX_STOP
+
+!BIGGIE	;31
+	PRIORITY	10
+	CHANNEL		1
+	ATK_DEC		$0F
+	FX_PULSE	2
+	MIN_MAX_VOL	$0F
+	START_NOTE	17
+
+	FX_DOWN		4,40;41,40;121,80
+	FX_STOP
+
+
+**************************************************
+FX_ENVELOPES	LDA FX_ATCK,X	; attack value
+	BEQ FX_TRYD
+
+;get attack value
+;
+	JSR FX_REALSPEED
+	BEQ !SKP
+
+	LDA FX_VOLUME,X	; current volume
+	CLC
+	ADC FX_TEMP+1
+	CMP FX_VOL2,X
+	BCC !OK
+;hit max vol
+;
+	LDA #0
+	STA FX_ATCK,X
+	LDA FX_VOL2,X
+
+!OK	STA FX_VOLUME,X
+!SKP	RTS
+
+
+FX_TRYD	LDA FX_DEL,X
+	BEQ !SKP2
+
+;get decay value
+;
+	JSR FX_REALSPEED
+	BEQ !SKP
+
+	LDA FX_VOLUME,X	; current volume
+	SEC
+	SBC FX_TEMP+1
+	BCC !BOT
+	CMP FX_VOL1,X
+	BCS !OK
+!BOT
+;hit min vol
+;
+	LDA #0
+	STA FX_DEL,X
+	LDA FX_VOL1,X
+
+!OK	STA FX_VOLUME,X
+!SKP	RTS
+
+!SKP2	LDA FX_VOL1,X;Y
+	STA FX_VOLUME,X
+	RTS
+
+
+
+*******************************************************************
+
+FX_SETUP	STX ffx_ad1L
+
+	ASL
+	TAX
+
+;	LDA ffx_ad1L
+;	PHA
+;	TYA
+;	PHA
+
+	LDA FX_TABLE,X
+	STA ffx_ad1L
+	LDA FX_TABLE+1,X
+	STA ffx_ad1H
+
+;check priority level
+;
+	LDY #1
+	LDA (ffx_ad1),Y
+	TAX
+	LDY #0
+	LDA (ffx_ad1),Y
+	CMP FX_PRIORITY,X
+	BCS !HIGH
+;	pla
+;	tay
+;	pla
+;	tax
+	RTS
+
+!HIGH	STA FX_PRIORITY,X
+
+;set x to point to voice
+;
+	LDA ffx_ad1L
+	STA FX_POINTL,X;Y
+	LDA ffx_ad1H
+	STA FX_POINTH,X;Y
+
+	STX ffx_ad2L	; voice number
+	TXA
+	ASL
+	ASL
+	TAX
+	STX ffx_ad2H	; voice number * 4
+
+;x = 0-3
+;
+	LDX ffx_ad2L
+;set fx time
+;
+	LDA #255
+	STA FX_TIME,X
+;stop music channel
+;
+
+	STA VOICE1,X
+
+;pointer to next fx instruction
+;
+	LDA #6
+	STA FX_POSITION,X
+
+;set pulse value
+;
+	LDY #3
+	LDA (ffx_ad1),Y
+	STA FX_PLS,X
+
+;attack/decay settings
+;
+	LDY #2
+	LDA (ffx_ad1),Y
+	PHA
+	AND #240
+	LSR
+	LSR
+	LSR
+	LSR
+	BEQ !EEQ
+	SEC
+	SBC #1
+	EOR #15
+!EEQ	STA FX_ATCK,X;Y
+	PLA
+	AND #15
+	BEQ !EEQ2
+	SEC
+	SBC #1
+	EOR #15
+!EEQ2	STA FX_DEL,X;Y
+
+;min/max volume settings
+;
+	LDY #4
+	LDA (ffx_ad1),Y
+	PHA
+	AND #240
+	LSR
+	LSR
+	LSR
+	LSR
+	STA FX_VOL1,X;Y
+	PLA
+	AND #15
+	STA FX_VOL2,X;Y
+
+;set start volume to 0
+;
+	LDA #0
+	STA FX_VOLUME,X;Y
+
+;set cycle delay
+;
+	LDA #1
+	STA FX_CYCLES,X;Y
+
+	LDA FX_ATCK,X;Y
+	BNE !ATK_ON
+
+;no attack, so set decay to max volume
+;
+	LDA FX_VOL2,X;Y
+	STA FX_VOLUME,X;Y
+!ATK_ON
+
+;set voice type
+;x = voice table
+;
+	LDX ffx_ad2H
+	LDA #$30
+	STA FX_VOICES+0,X
+
+;get pitch value
+;
+	LDY #5
+	LDA (ffx_ad1),Y
+	TAY
+	LDA TABLO,Y
+	STA FX_VOICES+2,X
+	LDA TABHI,Y
+	STA FX_VOICES+3,X
+
+!TOO_LOW
+;	PLA
+;	TAY
+;	PLA
+;	TAX
+	RTS
+
+*******************************************
+
+
+FX_PLAY	inc fx_counterz
+
+	LDA #3
+	STA FX_TEMP
+
+!AGAIN	LDX FX_TEMP
+	LDA FX_PRIORITY,X
+	BEQ !NO_FX2
+;
+;get base of voice channel
+;
+	TXA
+	ASL
+	ASL
+	TAY
+
+;output voice if fx just triggered
+;
+	LDA FX_VOICES,Y
+	ORA FX_VOLUME,X
+	ORA FX_PLS,X
+	STA $4000,Y
+
+	LDA FX_TIME,X
+	CMP #255
+	BNE !NSETUP
+
+	DEC FX_TIME,X
+
+	LDA FX_VOICES+2,Y
+	STA $4000+2,Y
+	LDA FX_VOICES+3,Y
+	STA $4000+3,Y
+
+!NSETUP
+!NO_FX	JSR FX_ENVELOPES
+
+	DEC FX_CYCLES,X
+	BNE !NO_FX1
+
+	JSR FX_NEXT
+
+!NO_FX1	JSR FX_DO
+
+!NO_FX2	DEC FX_TEMP
+	BPL !AGAIN
+	RTS
+
+
+
+FX_NEXT	LDA FX_POINTL,X
+	STA FX_AD1L
+	LDA FX_POINTH,X
+	STA FX_AD1H
+
+	LDY FX_POSITION,X
+	LDA (FX_AD1),Y
+	BEQ !QUIT
+	STA FX_ON,X
+
+	INY
+	LDA (FX_AD1),Y
+	STA FX_DATA1,X
+
+	INY
+	LDA (FX_AD1),Y
+	STA FX_CYCLES,X
+
+	INC FX_POSITION,X
+	INC FX_POSITION,X
+	INC FX_POSITION,X
+	RTS
+
+
+
+!QUIT	LDA #0
+	STA FX_ON,X
+	STA FX_PRIORITY,X
+	STA VOICE1,X
+
+;
+;fixed bit ?????
+;
+	ldy NOTE1,X	;VALUE,X
+	LDA TABHI,Y
+	pha
+	LDA TABLO,Y
+	pha
+
+	TXA
+	ASL
+	ASL
+	TAY
+
+	pla
+	STA $4002,y
+	pla
+	STA $4003,y
+;
+;end of fixed bit
+;
+
+
+	CPX #2
+	BEQ !TRIANGLE
+
+	LDA #$30
+	STA $4000,Y
+	RTS
+
+!TRIANGLE	LDA #0
+	STA $4000,Y
+	RTS
+
+
+
+FX_DO	LDA FX_ON,X
+	CMP #1
+	BNE !NFX1
+
+;raise pitch
+;
+	TXA
+	ASL
+	ASL
+	TAY
+
+	LDA FX_VOICES+2,Y
+	SEC
+	SBC FX_DATA1,X
+	STA FX_VOICES+2,Y
+	BCS !STORE_LOW
+
+	LDA FX_VOICES+3,Y
+	;SEC
+	SBC #0;1
+	STA FX_VOICES+3,Y
+
+!STORE_HIGH	LDA FX_VOICES+3,Y
+	STA $4000+3,Y
+
+!STORE_LOW	LDA FX_VOICES+2,Y
+	STA $4000+2,Y
+	RTS
+
+!NFX1	CMP #2
+	BNE !NFX2
+
+;lower pitch
+;
+	TXA
+	ASL
+	ASL
+	TAY
+
+	LDA FX_VOICES+2,Y
+	CLC
+	ADC FX_DATA1,X
+	STA FX_VOICES+2,Y
+	BCC !STORE_LOW
+
+	LDA FX_VOICES+3,Y
+	;CLC
+	ADC #0;1
+	STA FX_VOICES+3,Y
+	JMP !STORE_HIGH
+
+!NFX2	CMP #3
+	BNE !NFX3
+
+;set note
+;
+	LDY FX_DATA1,X
+	LDA TABHI,Y
+	PHA
+	LDA TABLO,Y
+	PHA
+
+	TXA
+	ASL
+	ASL
+	TAY
+
+	PLA
+	STA FX_VOICES+2,Y
+	PLA
+	STA FX_VOICES+3,Y
+
+	JMP !STORE_HIGH
+
+!NFX3	;CMP #4
+	;BNE !NFX4
+
+
+!NFX4	CMP #5
+	BNE !NFX5
+
+;raise pitch slightly
+;
+	TXA
+	ASL
+	ASL
+	TAY
+
+	LDA FX_DATA1,X
+	JSR FX_REALSPEED
+
+	LDA FX_VOICES+2,Y
+	SEC
+	SBC FX_TEMP+1
+	STA FX_VOICES+2,Y
+	BCS !STORE_LOW
+
+	LDA FX_VOICES+3,Y
+	SBC #0
+	STA FX_VOICES+3,Y
+	JMP !STORE_HIGH
+
+!NFX5	CMP #6
+	BNE !NFX6
+
+;lower pitch slightly
+;
+	TXA
+	ASL
+	ASL
+	TAY
+
+	LDA FX_DATA1,X
+	JSR FX_REALSPEED
+
+	LDA FX_VOICES+2,Y
+	CLC
+	ADC FX_TEMP+1
+	STA FX_VOICES+2,Y
+	BCC !JSTORE_LOW
+
+	LDA FX_VOICES+3,Y
+	ADC #0
+	STA FX_VOICES+3,Y
+	JMP !STORE_HIGH
+!JSTORE_LOW	JMP !STORE_LOW
+
+!NFX6	CMP #7
+	BNE !NFX7
+
+	LDA FX_DATA1,X
+	JSR FX_SETUP
+
+!NFX7	RTS
+
+*********************************
+
+FX_REALSPEED	BMI !REAL2
+	STY FX_REAL_SAVE
+	STA FX_TEMP+1
+	LSR FX_TEMP+1
+	LSR FX_TEMP+1
+	AND #3
+	TAY
+	LDA FX_COUNTERZ
+	AND #3
+	CMP !RE,Y
+	BCC !1
+	INC FX_TEMP+1
+!1	LDY FX_REAL_SAVE
+	LDA FX_TEMP+1
+	RTS
+
+!RE	DB 4,3,2,1
+
+!REAL2	STY FX_REAL_SAVE
+	EOR #255
+	CLC
+	ADC #1
+	STA FX_TEMP+1
+	LSR FX_TEMP+1
+	LSR FX_TEMP+1
+	AND #3
+	TAY
+	LDA FX_COUNTERZ
+	AND #3
+	CMP !RE,Y
+	BCC !2
+	INC FX_TEMP+1
+!2	LDA FX_TEMP+1
+	EOR #255
+	CLC
+	ADC #1
+	LDY FX_REAL_SAVE
+	STA FX_TEMP+1
+	RTS
+
+*******************************
+
+
+	endif
+

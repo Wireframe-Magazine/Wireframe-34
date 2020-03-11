@@ -1,0 +1,20 @@
+
+
+	
+ED8
+b8	equ ED8-&8000
+	LIST ON
+BANK8  DEFB <B8,>B8   ;overflow bank
+	LIST OFF
+
+
+endofbank8	if endofbank8>&bfff
+	error "game bank 8 overflowed
+	endif
+
+	bank 8
+
+	org &8000
+
+
+

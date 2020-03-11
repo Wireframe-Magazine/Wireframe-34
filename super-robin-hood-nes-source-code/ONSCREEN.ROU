@@ -1,0 +1,1243 @@
+
+
+
+checkaddflamesetc
+	ldy address9
+	lda blockrous,y
+	beq putinnowt
+	sta temp1
+	and #63
+	sta temp
+	tax
+	lda ablockrous,x
+	sta address
+	lda ablockrous+1,x
+	sta address+1
+	ldx #noofonscreens-1
+findaspace	lda onscreenrou,x
+	beq gotspaceonscreen
+findaspace1	dex
+	bpl findaspace
+putinnowt	rts
+gotspaceonscreen
+	bit temp1
+	bvc !1
+	cpx #noofonscreens-1
+	beq findaspace1
+	lda onscreenrou+1,x
+	bne findaspace1
+!1	lda temp
+	sta onscreenrou,x 
+	lda #0
+	sta onscreencount1,x
+	sta onscreencount2,x
+	jmp (address)
+ablockrous
+bnowt	equ 0
+	defw putinnowt
+bflam	equ 2
+	defw putinflames
+bspit	equ 4
+	defw putinspit
+beyes	equ 6
+	defw putineyes
+bdrip	equ 8
+	defw putindrip
+btram	equ &a
+	defw putintramp 
+bdrdn	equ &c+128
+	defw putindrilldown
+bdrup	equ &e+128
+	defw putindrillup
+bbat	equ &10+128+64
+	defw putinbat
+brat	equ &12+128
+	defw putinrat
+bspid	equ &14+128
+	defw putinspider
+bhart	equ &16+128
+	defw putinheart
+bbarr	equ &18+64
+	defw putinbarrel
+bblck	equ &1a+128
+	defw putinblock
+bcoin	equ &1c+128
+	defw putincoin
+;---------------------------
+blockrous	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;0
+	defb bnowt,bnowt,bflam,bnowt,bnowt,bnowt,bnowt,bnowt   ;8
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&10
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&18
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&20
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&28
+	defb bnowt,bnowt,bnowt,bnowt,bspit,bspit,bnowt,bnowt   ;&30
+	defb bnowt,bnowt,bnowt,bnowt,bflam,bnowt,bnowt,bnowt   ;&38
+	defb bnowt,bnowt,bnowt,bnowt,bflam,bnowt,bnowt,bnowt   ;&40
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&48
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,beyes,bnowt,bnowt   ;&50
+	defb bnowt,bnowt,bnowt,bspid,bhart,bbarr,bnowt,bnowt   ;&58
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&60
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&68	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;0
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&70
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&78
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&80
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&88
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&90
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&98
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&a0
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bdrdn,bdrup   ;&a8
+	defb btram,bnowt,bbat ,brat ,bnowt,bnowt,bnowt,bnowt   ;&b0
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&b8
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&c0
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&c8
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&d0
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&d8
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&e0
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bnowt   ;&e8
+	defb bnowt,bnowt,bdrip,bcoin,bnowt,bnowt,bnowt,bnowt   ;&f0
+	defb bnowt,bnowt,bnowt,bnowt,bnowt,bnowt,bflam,bnowt   ;&f8
+;-------------------------------
+updateonscreens
+	ldy #noofonscreens-1
+doupdates	ldx onscreenrou,y
+	beq backfromscreenrou1
+	cpx #255
+	beq backfromscreenrou1
+	sty address9
+	lda updatescrrous-2,x
+	sta address
+	lda updatescrrous+1-2,x
+	sta address+1
+	jmp (address)
+backfromscreenrou
+	ldy address9
+backfromscreenrou1
+	dey
+	bpl doupdates 
+	rts
+updatescrrous defw updateflames,updatespit,updateeyes,updatedrips
+	defw updatetramp,updatedrilldown,updatedrillup,updatebat
+	defw updaterat,updatespider,updateheart,updatebarrel,updateblock
+	defw updatecoin
+;-------------------------------------
+onscrxandy0	lda #0
+onscrxandy	ldy blockx
+	add times16lo-1,y
+	sta onscreenxl,x
+	lda times16hi-1,y
+	adc #0
+	sta onscreenxh,x
+	ldy blocky
+	lda times16lo,y
+	sta onscreeny,x
+	ldy #noofonscreens-1
+!1	sty temp
+	cpx temp
+	beq !2
+	lda onscreenrou,y
+	beq !2
+	cmp onscreenrou,x
+	bne !2	
+	lda onscreenxl,x
+	cmp onscreenxl,y
+	bne !2
+	lda onscreenxh,x
+	cmp onscreenxh,y
+	bne !2
+	lda onscreeny,x
+	cmp onscreeny,y
+	bne !2
+	lda #0
+	sta onscreenrou,x
+	rts
+!2	dey
+	bpl !1
+rts3	rts
+;--------------------------------
+putinflames	lda #4
+	cpy #&0a
+	beq addflame
+	cpy #&fe
+	beq addflame
+	lda #12
+	cpy #&44
+	bne addflame
+	jsr onscrxandy
+	lda onscreeny,x
+	add #-8
+	sta onscreeny,x
+	rts
+addflame	jmp onscrxandy
+;------------------------------------
+putinspit	lda #0
+	cpy #&34
+	beq !1
+	lda #-1
+!1	sta onscreencount1,x
+	lda blockx
+	and #7
+	sta onscreencount2,x
+	lda #4
+	jmp onscrxandy
+;---------------------------------------
+putineyes	lda seed+2
+	cmp #30		;higher num for more frequent
+	bcs dontputinonscreen
+	and #3
+	sta onscreencount2,x
+	lda seed+1
+	sta onscreencount1,x
+	jmp onscrxandy0
+dontputinonscreen
+	lda #0
+	sta onscreenrou,x
+	jmp random
+;----------------------------------------
+putindrip	lda blockx
+	and #3
+	tay	
+	lda firestable,y
+	sta onscreencount2,x
+	lda #8
+	jsr onscrxandy
+	lda onscreeny,x
+	add #16+4
+	sta onscreeny,x
+	rts
+firestable	defb 255,127,63,127
+;---------------------------------------
+putintramp	lda #8
+	jmp onscrxandy
+;--------------------------------------
+putindrillup	lda #4
+	jsr onscrxandy
+ 	lda onscreeny,x
+	add #16
+putindriller	sta onscreeny,x
+	sta onscreencount1,x
+	lda blockx
+	and #7
+	add #128+64
+	sta onscreencount2,x
+	rts
+;--------------------------------------
+putindrilldown
+	lda #4
+	jsr onscrxandy
+ 	lda onscreeny,x
+	add #-10
+	jmp putindriller
+;--------------------------------------
+putinbat 	ldy #noofonscreens-1
+morebats	lda onscreenrou,y
+	cmp #bbat-64-128
+	bne batok
+	lda onscreenxl+1,y
+	cmp blockx
+	bne batok
+	lda onscreeny+1,y
+	cmp blocky
+	bne batok
+putincanceldouble
+	lda #0
+	sta onscreenrou,x
+	sta onscreenrou+1,x
+	rts
+batok	dey
+	bpl morebats
+
+	lda #255
+	sta onscreenrou+1,x
+
+	lda blockx
+	and #1
+	bne !3
+	lda #-1
+!3	sta onscreencount1,x
+	lda #1
+	sta onscreencount2,x
+	sta onscreencount2+1,x
+	lda #10
+	sta onscreencount1+1,x
+	lda blockx
+	sta onscreenxl+1,x
+	lda blocky
+	sta onscreeny+1,x
+	jmp onscrxandy0
+;--------------------------------------
+putinrat 	lda #128
+	sta onscreencount1,x
+	lda blockx
+	and #3
+	tay
+	lda rattable,y
+	sta onscreencount2,x
+	jmp onscrxandy0
+rattable	defb 0+3,128+3,0+1,128+1
+;--------------------------------------
+putinspider  lda blockx
+	and #1
+	sta onscreencount2,x
+	lda #9
+	jmp onscrxandy
+;--------------------------------------
+putinbarrel	lda #255
+	sta onscreenrou+1,x
+	lda #0
+	sta onscreeny+1,x
+	lda blockx
+	and #1
+	bne !1
+	lda #255
+!1	sta onscreencount2+1,x
+	lda blockx
+	lsr
+	and #1
+	sta onscreencount2,x
+	lda #8
+	jsr onscrxandy
+	bne !2
+	jmp putincanceldouble
+!2	rts
+;--------------------------------------
+putinblock 
+	jmp onscrxandy0
+;--------------------------------------
+putinheart 	changebank 13
+	ldy #8*6*2
+	bne putinheartbit
+;-----------
+putincoin	changebank 13
+	ldy #0
+putinheartbit
+	jsr putinheartbank
+	changebank 12
+	rts
+;--------------------------------------
+calconscreenx
+	lda onscreenxl,y
+	sec
+	sbc scrxl
+	tax
+	lda onscreenxh,y	
+	sbc scrxh
+	sta xcoordh
+	bne outofscreen
+	rts
+outofscreen
+	bpl !5
+	cpx #256-32
+	bcs !1
+	bcc !6
+!5	cpx #32
+	bcc !1
+!6	lda #0
+	sta onscreenrou,y
+	pla
+	pla
+	jmp backfromscreenrou
+!1	rts
+;----------------------------------------
+updateflames	jsr calconscreenx
+	lda xcoordh
+	bne !1
+	sty temp1
+	ldy #3
+	lda counter
+	and #4
+	bne !3
+	dex
+	ldy #3+64
+!3	sty temp
+	ldy temp1
+	lda onscreeny,y
+	add #ydisplace
+	tay
+	lda #&95
+	jsr pokesprite	
+!1	jmp backfromscreenrou
+;-----------------------------------------
+updatespit	ldx onscreencount2,y
+	lda spitdelay,x
+	and counter
+	bne endspitter
+	
+	jsr calconscreenx
+	ldx #noofspitters-1
+findspitterslot
+	lda spittery,x
+	beq gotspitter
+	dex
+	bpl findspitterslot
+	beq endspitter	
+gotspitter	lda onscreenxl,y
+	sta spitterxl,x
+	lda onscreenxh,y
+	sta spitterxh,x
+	lda onscreeny,y
+	add #8
+	sta spittery,x
+	lda onscreencount1,y
+	sta spitterdir,x
+	lda #spitfx
+	jsr soundfx
+endspitter	jmp backfromscreenrou
+spitdelay	defb 255,127,255,255,127,255,255,127
+;----------------------------------------
+updateeyes	lda counter
+	and #3
+	bne !2
+	lda onscreencount1,y
+	dca
+	sta onscreencount1,y
+	bne !2
+	lda seed
+	sta onscreencount1,y
+	lda onscreencount2,y
+	eor #255
+	sta onscreencount2,y
+!2	lda onscreencount2,y
+	bmi !1
+	jsr calconscreenx
+	lda onscreencount2,y
+	sta temp
+	lda onscreeny,y
+	tay
+	lda temp
+	add #eyes
+	jsr winprintsprite
+	
+!1
+backfromscr	jmp backfromscreenrou
+;----------------------------------------
+updatedrips
+	lda onscreencount1,y
+	bne firehappening
+	lda counter
+	add onscreenxl,y
+	and onscreencount2,y
+	bne enddrips
+	lda #breathingfirefx
+	jsr soundfx
+	ldy address9
+	lda #64
+firehappening
+	dca
+	sta onscreencount1,y
+	jsr calconscreenx
+	stx address8
+	lda onscreeny,y
+	jsr pickupcollision
+	bcs !1
+	tya
+	pha
+	lda #1
+	jsr subfromhearts		;fire has hit robin
+	pla
+	tay
+!1
+	lda onscreeny,y
+	sta temp
+	lda onscreencount1,y
+	lsr
+	lsr
+	sta temp1
+	lsr
+	and #7
+	tay
+	lda firetable,y
+	ldy temp
+	lsr temp1
+	jsr winprintspriteposrev
+enddrips	jmp backfromscreenrou
+
+firetable	defb fire,fire+1,fire+2,fire+3,fire+4,fire+3,fire+2,fire+1
+;----------------------------------------
+updatetramp
+	jsr calconscreenx
+	stx address8
+	lda xcoordh
+	bne endtramp
+	lda robingravity
+	add #2
+	bmi endtramp
+	lda onscreeny,y
+	add #16
+	jsr pickupcollision
+	bcs endtramp
+	lda #0
+	sec
+	sbc robingravity
+	cmp #-24
+	bcc !3
+	sta robingravity
+!3	jsr checkleftrightkeys
+	jsr addleftright1
+	move.w orobinxl,robinxl
+	lda #trampfx
+	jsr soundfx
+	ldy address9
+	lda #1
+	sta robinjumping
+	lda #-6
+	sta onscreencount1,y
+
+	
+endtramp	lda onscreeny,y
+	sta address8+1
+	lda onscreencount1,y
+	bpl !6
+	ldx address9
+	inc onscreencount1,x
+	lda #trampet+1
+	bne !4
+!6	lda #trampet
+!4	ldx address8
+	ldy address8+1
+	jsr winprintsprite
+	jmp backfromscreenrou
+
+;----------------------------------------
+updatedrilldown
+	jsr calconscreenx
+	lda #128
+	sta address7+1
+	lda #-1
+	jsr standarddrill
+	ldx xcoordh
+	bne enddrilldown
+	cpy address8+1
+	bcc enddrilldown
+!1	ldx address8
+	jsr pokesprite
+	tya
+	add #-8
+	tay
+	lda #&be
+	cpy address8+1
+	bcs !1
+enddrilldown	jmp backfromscreenrou
+;----------------------------------------
+updatedrillup
+	jsr calconscreenx
+	lda #0
+	sta address7+1
+	lda #1
+	jsr standarddrill
+	ldx xcoordh
+	bne enddrillup
+!1	ldx address8
+	jsr pokesprite
+	tya
+	add #8
+	tay
+	lda #&be
+	cpy address8+1
+	bcc !1
+enddrillup	jmp backfromscreenrou
+;----------------------
+standarddrill
+	sta address7
+	stx address8
+	lda onscreencount2,y
+	and #64
+	beq !1
+	lda counter
+	bne printdrillup ;beq !2
+			;rts
+!2	lda onscreencount2,y
+	and #255-64
+	sta onscreencount2,y
+!1	lda onscreencount2,y
+	and #7
+	sta temp	
+	asl
+	add temp
+	tax
+	lda drillerpatterns+1,x
+	sta address6+1
+	lda drillerpatterns+2,x
+	eor counter
+	sta address6
+
+	lda onscreencount2,y
+	bpl movingdrill
+	lda address6
+	cmp drillerpatterns,x
+	bne contdrill
+	lda onscreencount2,y
+	eor #128
+	sta onscreencount2,y
+	
+movingdrill	lda address6
+	bmi drillcomingdown
+	and address6+1
+	bne contdrill
+	lda onscreencount1,y
+	sec
+	sbc address7
+	sta onscreencount1,y
+	jmp contdrill
+drillcomingdown
+	and address6+1
+	bne contdrill
+	lda onscreencount1,y
+	add address7
+	sta onscreencount1,y
+	cmp onscreeny,y
+	bne contdrill
+	lda onscreencount2,y
+	eor #128
+	sta onscreencount2,y
+
+contdrill	ldx address8
+	lda onscreencount1,y
+	tay
+	jsr checkchrcollision
+	ldy address9
+printdrillup
+	lda xcoordh
+	bne !1
+	lda #1+32
+	add address7+1
+	sta temp
+	lda onscreeny,y
+	add #ydisplace
+	sta address8+1
+	tay
+	ldx address8
+	lda #&7f	;&ae
+	jsr pokesprite
+!1
+	ldy address9
+	lda address6
+	asl
+	asl
+	asl
+	asl
+	and #64
+	add #2
+	add address7+1
+	sta temp
+	lda onscreencount1,y
+	add #ydisplace
+	tay
+	lda #&bd
+	rts
+	
+drillerpatterns ;defb waitcount,speed,start in/out
+	defb 64,1,0  
+	defb 32,1,255
+	defb 64,3,0  
+	defb 40,3,255
+	defb 40,1,0  
+	defb 64,1,255
+	defb 32,3,0  
+	defb 64,3,255
+;----------------------------------------
+updatebat
+	lda counter
+	and #1
+	bne !1
+	jsr movebat
+!1
+batnotmoving
+	lda onscreeny,y
+	sta address8+1
+	lda onscreenxl,y
+	sta address7
+	sec
+	sbc scrxl
+	sta address8
+	lda onscreenxh,y
+	sta address7+1
+	sbc scrxh
+	sta xcoordh
+	lda onscreeny,y
+	sec
+	sbc arrowy
+	add #4
+	cmp #16			;purposly big collison,was too difficult
+	bcs missedbat
+	jsr collidebatwitharrow
+	bcs missedbat
+	ldx #0
+	jsr takearrowoffrou
+	lda #bathitfx
+	jsr soundfx
+turnoffbat	ldy address9
+	lda #4
+	jsr startstars
+	lda #&41
+	jsr addtoscore
+	ldy address9
+	jmp turnoffdouble
+missedbat
+	ldx address8
+	lda xcoordh
+	bne !2
+	ldy address8+1
+	jsr checkchrcollision
+	bcs turnoffbat
+	bcc !1
+!2
+	add #1
+	cmp #3
+	bcc !1
+	jmp turnoffdouble
+!1	ldy address8+1
+	ldx address8
+	lda counter
+	lsr
+	lsr
+	and #1
+batonwall	add #bat
+	jsr winprintsprite
+	jmp backfromscreenrou
+;------
+movebat
+;	lda seed+1
+;	and #63
+;	bne !1
+;	lda #batsquelfx
+;	jsr soundfx
+!1	lda onscreenxl,y
+	and #7
+	bne batxok
+	lda onscreeny,y
+	sta address7
+	lda onscreenxh,y
+	tax
+	lda onscreencount1,y
+	beq nowbaty
+	bmi batnegx
+	lda onscreenxl,y
+	add #8
+	bcc doxbatchr
+	inx
+	jmp doxbatchr
+batnegx	lda onscreenxl,y
+	sec
+	sbc #8
+	bcs doxbatchr
+	dex
+doxbatchr	ldy address7
+	jsr findsolid
+	ldy address9
+	cmp #3
+	bne batxok
+	lda #0
+	sec
+	sbc onscreencount1,y
+	sta onscreencount1,y
+batxok	ldx #0
+	lda onscreencount1,y
+	bpl !1
+	ldx #255
+!1	add onscreenxl,y
+	sta onscreenxl,y
+	txa
+	adc onscreenxh,y
+	sta onscreenxh,y
+nowbaty	lda onscreeny,y
+	add #-8
+	ldx onscreencount2,y
+	cpx #0
+	beq batyok
+	bmi batnegy
+	add #16
+batnegy	sta address7
+	lda onscreenxl,y
+	ldx onscreenxh,y
+	ldy address7
+	jsr findsolid
+	ldy address9
+	cmp #3
+	bne batyok
+	lda #0
+	sec
+	sbc onscreencount2,y
+	sta onscreencount2,y
+batyok	
+
+	lda onscreencount2+1,y
+	inca
+	sta onscreencount2+1,y
+	lsr
+	lsr
+	lsr
+	and #7
+	tax
+	lda batwobble,x
+!1	add onscreencount2,y
+	add onscreeny,y
+	sta onscreeny,y
+donebaty
+!1	rts
+
+batwobble	defb 0,1,1,0,0,-1,-1,0
+;-----------------------------------------
+updaterat	lda onscreenxh,y
+	sec
+	sbc scrxh
+	add #2
+	cmp #5
+	bcc !1
+	lda #0
+	sta onscreenrou,y
+	jmp backfromscreenrou
+!1	lda onscreencount2,y
+	and #7
+	and counter
+	bne !5
+	lda onscreencount2,y
+	bmi !2
+	lda onscreencount1,y
+	add #1
+	bne !3
+!4	lda onscreencount2,y
+	eor #128
+	sta onscreencount2,y
+	jmp !5
+!2	lda onscreencount1,y
+	add #-1
+	beq !4
+!3	sta onscreencount1,y
+!5
+movedrat
+;	lda seed+1
+;	and #63
+;	cmp #32
+;	bne !11
+;	lda #ratsquelfx
+;	jsr soundfx
+!11
+
+
+	lda onscreencount1,y
+	sta temp9
+	sec
+	sbc #128
+	php
+	add onscreenxl,y
+	sta address8
+	lda onscreenxh,y
+	adc #0
+	plp
+	sbc #0
+	sta address8+1
+	tax
+	lda onscreeny,y
+	sta temp8
+	lda address8
+	and #7
+	bne ratnothitwall
+	lda onscreencount2,y
+	and #128
+	eor #128
+	bpl !1
+	lda #24
+!1	add address8
+	bcc !2
+	inx
+!2	sec
+	sbc #16
+	bcs !3
+	dex
+!3	stx address7+1
+	sta address7
+	ldy temp8
+	jsr findsolid
+	ldy address9 
+	cmp #3	
+	beq rathitwall
+	ldx address7+1
+	lda temp8
+	add #16
+	tay
+	lda address7
+	jsr findsolid
+	ldy address9 
+	cmp #0
+	bne ratnothitwall 
+
+rathitwall	lda onscreencount2,y
+	eor #128
+	sta onscreencount2,y
+ratnothitwall
+	lda onscreencount2,y
+	lsr
+	and #64
+	add #1
+	sta temp
+	lda address8
+	sec
+	sbc scrxl
+	sta address7
+	tax
+	lda address8+1
+	sbc scrxh
+	sta xcoordh
+	lda onscreeny,y
+	sta address7+1
+	add #4		;changing y of collison on rat
+	tay
+	ldx address7
+	lda xcoordh
+	bne !1
+	jsr checkchrcollision
+	ldx address7
+	lda address7+1
+	add #8
+	tay	
+	lda temp9
+	asl
+	and #4
+	add #&90
+	cmp #&90
+	beq !2
+	lda #&c8
+!2	jsr pokesprite2by2
+
+!1	jmp backfromscreenrou
+;-----------------------------------------
+updatespider	jsr calconscreenx
+	stx address8
+
+	lda onscreencount1,y
+	sta temp1
+	add onscreeny,y
+	add #8
+	sta temp9
+	lda onscreeny,y
+	add #ydisplace
+	sta address8+1
+
+	lda onscreencount2,y
+	bpl spidergoingdown
+	lda counter
+	and #3	
+	bne movedspider
+	lda onscreencount1,y
+	add #-1
+	sta onscreencount1,y
+	beq spiderchange
+	lda onscreencount2,y
+	and #1
+	beq movedspider
+	lda counter
+	beq spiderchange
+	bne movedspider
+spidergoingdown
+	lda onscreencount1,y
+	add #1
+	sta onscreencount1,y
+	and #7
+	bne movedspider
+	lda temp9
+	add #16
+	sta temp
+	ldx onscreenxh,y
+	lda onscreenxl,y
+	ldy temp
+	jsr findsolid
+	ldy address9
+	cmp #0
+	beq movedspider
+spiderchange	lda onscreencount2,y
+	eor #128
+	sta onscreencount2,y
+movedspider
+	lda temp9
+	jsr pickupcollision
+	bcs printspider	
+	lda #1
+	jsr subfromhearts
+	ldy address9	
+
+printspider	lda onscreencount2,y
+	and #1
+	bne !2
+	lda #&98	     ;chain
+	sta address7
+	ldx #2
+	lda #&b3 ;balls+1
+	bne !3	
+!2	lda #&94              ;spiders web
+	sta address7
+	ldx #1
+	lda onscreencount1,y
+	and #2
+	add #&a4
+	cmp #&a4
+	beq !3
+	lda #&f2
+!3	stx address7+1
+	stx temp
+	ldy temp9
+	ldx xcoordh
+	bne !4
+	ldx address8
+	jsr pokesprite2by2  ;winprintsprite
+!4		
+	lda address8
+	add #-4
+	sta address8
+	bcs !1
+	dec xcoordh
+!1
+	lda xcoordh
+	bne endspider
+	lda address7+1
+	sta temp
+	lda temp9
+	add #-16+ydisplace
+	tay
+	cmp #8
+	bcc endspider
+	
+drawchain	
+	ldx address8
+	lda address7
+	jsr pokesprite
+	tya
+	sec
+	sbc #8
+	tay
+	cmp address8+1
+	bcs drawchain
+	lda address7+1
+	add #32
+	sta temp
+	ldx address8
+	lda address7
+	jsr pokesprite
+	
+endspider	jmp backfromscreenrou	 
+
+;-----------------------------------------
+updatebarrel
+	lda onscreeny+1,y
+	bne barrelmoving
+	lda onscreenxl,y
+	sec
+	sbc scrxl
+	lda onscreenxh,y
+	sbc scrxh
+	add #1
+	cmp #3
+	bcc dontturnoffbarrel
+turnoffdouble
+	lda #0
+	sta onscreenrou,y
+	sta onscreenrou+1,y
+	jmp backfromscreenrou
+dontturnoffbarrel
+	lda onscreeny,y
+	add #1
+	sta onscreeny+1,y
+	lda onscreenxl,y
+	sta onscreenxl+1,y
+	lda onscreenxh,y
+	sta onscreenxh+1,y
+	lda onscreencount2+1,y
+	sta onscreencount1,y
+	lda #0
+	sta onscreencount1+1,y
+barrelmoving
+	lda onscreenxl+1,y	
+	sec
+	sbc scrxl
+	sta address7
+	lda onscreenxh+1,y
+	sbc scrxh
+	sta xcoordh
+	jsr movebarrel
+
+	lda onscreeny+1,y
+	sta address7+1
+	ldx address7
+	lda onscreencount2,y
+	bne !1
+	lda xcoordh
+	bne endbarrel
+	lda #2
+	sta temp
+	lda #&af ;balls
+	ldy address7+1
+	beq endbarrel
+	jsr pokesprite2by2
+	jmp backfromscreenrou
+!1	lda address7
+	lsr
+	lsr
+	and #3
+	add #barrels
+!2	ldy address7+1	
+	beq endbarrel
+
+	jsr winprintsprite
+	
+endbarrel	jmp backfromscreenrou
+;-------------------------------------------
+movebarrel
+	ldx onscreencount1,y
+	stx temp9
+	inx
+	lda onscreenxl+1,y
+	add onscreencount1,y
+	sta onscreenxl+1,y
+	lda onscreenxh+1,y
+	adc highbitadd,x
+	sta onscreenxh+1,y
+
+	lda onscreencount1+1,y
+	beq !3
+	bmi !1
+	lsr
+	lsr
+	jmp !2
+!1	nega
+	lsr
+	lsr
+	nega
+!2	add onscreeny+1,y
+	sta onscreeny+1,y
+	tax
+	cpx #&c0
+	bcc !3
+	lda onscreencount1+1,y
+	add #1	
+	sta onscreencount1+1,y
+	cpx #&e8
+	bcc !4
+	lda #0
+	sta onscreeny+1,y
+!4	rts
+!3
+	ldx onscreenxh+1,y
+	lda onscreencount1,y
+	bne !5
+	lda onscreenxl+1,y
+	and #7
+	bne barrelonfloor
+
+!5	lda onscreeny+1,y
+	add #9
+	sta temp
+	lda onscreenxl+1,y
+	ldy temp
+	jsr findsolid
+	ldy address9 
+	cmp #3	
+	beq barrelonfloor
+barrelfalling
+	lda counter
+	and #1
+	bne donegrav
+barreladdgrav
+	lda onscreencount1+1,y
+	add #1
+	cmp #17
+	bne storegrav
+	lda #16
+	bne storegrav
+
+barrelonfloor
+	lda onscreencount1+1,y
+	bmi donegrav
+	cmp #4
+	bcc !1
+	lda xcoordh
+	bne !1
+	lda #ballbouncefx
+	jsr soundfx
+!1	lda onscreencount1+1,y
+	bmi donegrav
+	lsr
+	nega
+storegrav	sta onscreencount1+1,y
+donegrav
+	lda onscreenxl+1,y
+	asl temp9
+	adc #0
+	and #3
+	bne barrelnothitwall
+	lda onscreenxl+1,y
+	ldx onscreencount1,y
+	bmi !1
+	add #8
+	jmp !2
+!1	add #-8
+!2	sta temp
+	inx
+	lda onscreenxh+1,y
+	adc highbitadd,x
+	tax
+	lda onscreeny+1,y
+	add #6
+	tay
+	lda temp
+	jsr findsolid
+	ldy address9
+	lda solidfound
+	cmp #3
+	bne barrelnothitwall
+barrelhitwall
+	lda #0
+	sec
+	sbc onscreencount1,y
+	sta onscreencount1,y
+	jmp pastbarrelwall
+barrelnothitwall
+pastbarrelwall
+nowcollidebarrelwithrobin
+	lda xcoordh
+	bne endbarrelmove
+
+	lda address7
+	sec
+	sbc robinonscrx
+	add #12
+	cmp #24
+	bcs endbarrelmove
+	lda onscreeny+1,y
+	sec
+	sbc robiny
+	add #32
+	cmp #30
+	bcc barrelhitrobin
+	ldx robinladder
+	bne endbarrelmove
+	cmp #44
+	bcs endbarrelmove
+!1	lda onscreeny+1,y
+	add #-9
+	sta address7+1 
+	jsr robinjumpoffplatform
+	ldy address9
+	rts
+barrelhitrobin
+	lda robininvinc
+	bne endbarrelmove
+	lda #1
+	jsr subfromhearts
+	ldy address9
+endbarrelmove
+	rts
+;-----------------------------------------
+updateblock	jsr calconscreenx
+	jmp backfromscreenrou
+;-----------------------------------------
+updateheart
+updatecoin	jsr calconscreenx
+	changebank 13
+	jsr restupdatecoin
+	changebank 12
+	jmp backfromscreenrou
+;-----------------------------------------	
+
+
+
+
+

@@ -1,0 +1,1176 @@
+
+
+
+resetrobinvars
+	move.val 290,robinxl
+	lda #208
+	sta robiny
+
+	if testpause=1
+	lda #startlevel
+	asl
+	sta temp
+	asl
+	add temp	
+	tax
+	lda mapinfo+2,x
+	tay
+	lda times16lo,y
+	add #150
+	sta robinxl
+	lda times16hi,y
+	adc #0
+	sta robinxh
+	lda #190
+	sta robiny
+	endif
+	lda #0
+	sta minmap
+
+	rts
+
+resetrobinvars1	
+	jsr turninteroff
+	lda tune	
+	cmp #2
+	beq !21
+	jsr turnofftune
+!21	lda #5
+	sta hipos
+	lda #40
+	sta juststartedlife
+	lda #0
+	sta robinjustjumped
+	sta robingravity
+	sta robincrouch
+	sta robinladder   
+	sta robinjumping
+	sta robinfiring
+	sta robinlook
+	sta killed
+	sta runcount
+	sta robinbehind
+	lda #1
+	sta robinanim
+	lda #190
+	sta robininvinc
+	lda #hiscorechrs0.43
+	jsr copyblockofcompactedchrs
+
+
+
+	changebank 13
+	ldxy printlivesinfomess
+	jsr prtmessage
+	ldx lives
+	lda hearts
+	bne bob1
+infinate	dec lives
+	dex
+	bpl !6
+	jmp bob1
+!6	lda #3
+	sta hearts
+	inx
+bob1
+!5	cpx #6
+	bcc !1
+	ldx #6
+!1	cpx #0
+	bne !12
+	lda #4
+	sta hipos
+
+!12	ldy #<life1mess
+	lda livesbit,x
+	add #>life1mess
+	bcc !2
+	iny
+!2	tax
+	jsr prtmessage
+
+
+	ldy #0
+	ldx #0
+copyintreasures
+	lda #0
+	sta heartstable,y
+	lda treasureleftmess,y
+	sta vrambuffer,y
+	tya
+	and #3
+	cmp #3
+	bne !7
+	lda treasures,x
+	add #33
+	sta vrambuffer,y
+	inx
+!7	iny
+	cpy #6*4
+	sty vrampointer
+	bne copyintreasures
+	jsr emptyprintbuffer
+
+
+	lda completedgame
+	beq !3
+	ldxy completedgamemessage
+	jsr prtmessage
+	lda #255
+	sta minmap
+	sta hipos
+!3
+	changebank 12
+
+	ldxy showlivescolours
+	jsr setfade
+
+	lda hipos		;intro/game over/completed
+	bmi !11
+	jsr starttune
+!11
+	jsr turninteron
+!1	flybackvar
+	jsr printscore
+	jsr printhearts
+	jsr printlives
+
+	
+	lda completedgame
+	beq !8
+	jsr putextrason
+	lda #0
+	sta extravars+2
+	changebank 13
+	jsr updatehearts
+	changebank 12
+	jmp !6
+!8
+	changebank 13	
+	jsr print6treasures
+	ldx #&0d-4
+	jsr pulsecolour
+
+	changebank 12
+
+!6	lda pad
+	and #stmask
+	beq !1
+	lda debounce
+	and #stmask
+	bne !1
+	jmp turninteroff
+	
+
+
+moveman	lda killed
+	beq !2
+!3	rts
+!2	lda juststartedlife	
+	bne !3
+
+	move.w robinxl,orobinxl
+	move.b robiny,orobiny
+	
+	lda robinjustjumped
+	beq !4
+	lda pad
+	and #amask
+	bne !4
+	lda #0
+	sta robinjustjumped
+!4
+	lda robinladdercounter
+	beq !1
+	dec robinladdercounter
+!1	lda robinladder
+	beq notladder
+	jmp onladder
+notladder	jsr dofiring
+	jsr dogravity
+	jsr docrouchstuff	
+	jsr checkforladderup
+	lda robinjumping
+	beq robinnotjumping
+	jmp dorobinjumping
+robinnotjumping
+	jsr checkleftrightkeys
+	jsr addleftright
+
+	lda runcount
+	bne !3
+	lda robingravity
+	cmp #128
+	bne !3
+	lda #255
+	sta robinanim
+!3	lda robincrouch
+	bne nottryingtojump
+	lda pad
+	and #amask
+	beq nottryingtojump
+	lda debounce
+	and #amask
+	bne nottryingtojump
+	jsr findroof
+	beq nottryingtojump
+	inc robiny
+	jsr findfloor
+	php
+	dec robiny
+	plp
+	beq nottryingtojump1
+jumpingok	lda robinjustjumped
+	bne nottryingtojump
+	lda #1
+	sta robinjumping
+	sta robinjustjumped
+!1	lda runcount
+	lsr
+	lsr
+	lsr
+	eor #255
+	add #-13
+	sta robingravity
+	jmp dorobinjumping
+
+hitwall	lda #0
+	sta robinanim
+	jsr restorex
+	jmp doneleftright
+
+nottryingtojump
+	lda pad
+	and #255-amask
+	sta pad
+nottryingtojump1
+nowcheckifdirectionok
+	lda orobinxl
+	cmp robinxl
+	beq notmovingleftorright  
+	bcc movingright
+	jsr findwallleft
+	bne hitwall
+	beq doneleftright
+movingright
+	jsr findwallright
+	bne hitwall
+notmovingleftorright
+doneleftright
+	jsr findfloor
+	lda blockfound
+	sta robinbehind
+	lda solidfound
+	cmp #2
+	bcc !2
+	dec robiny
+	inc riseup
+	lda riseup
+	cmp #15
+	bne !3
+	dec riseup
+	inc robiny
+	jmp !3
+!2	lda #0
+	sta riseup
+!3	inc robiny
+	jsr findfloor
+	dec robiny
+	lda solidfound
+	cmp #1
+	beq ontopofladder
+	cmp #2
+	beq semifloorfound	
+	and #1
+	bne floorfound
+fallthru
+	lda robingravity
+	cmp #128
+	bne !1
+	lda #0
+	sta robingravity
+	lda robiny
+	add #6
+	sta robiny
+	jsr findfloor
+	lda robiny
+	add #-6
+	sta robiny
+	lda solidfound
+	and #1
+	beq !1
+	lda #1
+	sta robinjumping
+	lda #8 ;16
+	sta robingravity
+!1	rts
+floorfound	lda #128
+	sta robingravity
+	rts
+semifloorfound
+	lda robincrouch
+	bne fallthru
+	jmp floorfound
+ontopofladder
+	lda robingravity
+	cmp #128
+	bne !1
+	lda robinjumping
+	beq floorfound
+!1	rts
+;---------------------------
+checkleftrightkeys
+	lda #0
+	sta leftright
+	lda robincrouch
+	bne !2
+	lda pad
+	and #rmask
+	beq !1
+	lda #1
+	sta leftright
+	bne !3
+!1	lda pad
+	and #lmask
+	beq !2
+	lda #-1
+	sta leftright
+!3	cmp oleftright
+	beq !4
+	ldx #1
+	sta runcount
+!4	sta oleftright
+!2	rts
+;---------------------------
+walkoffladder
+	lda #128
+	bne restoffladd
+jumpoffladderleft
+jumpoffladderright
+	lda #1
+	sta robinjumping
+	lda #1
+	sta runcount
+	lda #-13
+restoffladd	sta robingravity
+	lda #0
+	sta robinladder
+	lda #12
+	sta robinladdercounter
+	rts
+;---------------------------
+onladder	lda robinxl
+	and #%1111
+	cmp #8
+	beq !13
+	bcs !14
+	inc robinxl
+	jmp !bug
+!14	dec robinxl
+!bug	ldy robiny
+	lda robinxl
+	ldx robinxh
+	jsr findsolid
+	cmp #1
+	beq !bugok 
+
+
+	lda robinheight
+	add #4
+	tay
+	lda robinxl
+	ldx robinxh
+	jsr findsolid
+	cmp #1
+	bne walkoffladder
+!bugok	jmp !4
+!13
+;doneladdercentering
+	jsr checkleftrightkeys
+	lda pad
+	and #lmask
+	beq !3
+;	jsr findwallleft
+
+
+;findwallleft
+	lda robinxl
+	sec
+	sbc #manwidth+6
+	sta temp8
+	lda robinxh
+	sbc #0
+	jsr restwall
+
+	bne !3
+	lda pad
+	and #amask
+	bne jumpoffladderleft
+	lda robiny
+	add #6
+	tay
+	lda temp8
+	ldx temp9
+	jsr findsolid
+	beq !3
+	jmp walkoffladder
+
+
+!3	lda pad
+	and #rmask
+	beq !4
+	jsr findwallright
+
+	bne !4
+	lda pad
+	and #amask
+	beq !22
+	jmp jumpoffladderright
+!22	lda robiny
+	add #6
+	tay
+	lda temp8
+	ldx temp9
+	jsr findsolid
+	beq !23
+	jmp walkoffladder
+!23
+!4
+	
+	jsr checkifstillonladderup
+
+!1	lda pad
+	and #dmask
+	beq !2
+	inc robiny
+	jsr checkifstillonladderdown
+!2	rts
+;---------------------------
+checkifstillonladderdown
+	ldy robiny
+	cpy #&24
+	bcc !1
+	iny	
+	lda robinxl
+	ldx robinxh
+	jsr findsolid
+	sta temp4
+	cmp #1
+	beq !1
+	cmp #0
+	bne stepoffladderdown
+	lda robinheight	
+	add #4
+	tay
+	lda robinxl
+	ldx robinxh
+	jsr findsolid
+	cmp #1
+	bne stepoffladderdown
+!1	rts
+;---------------------------
+stepoffladderdown
+	lda temp4
+	cmp #3
+	beq stepoff1
+	lda #1	
+	sta robingravity
+	sta robinjumping
+	bne stepoff1
+stepoffladderup
+	lda #128
+	sta robingravity
+	lda #0
+	sta robinjumping
+stepoff1	lda #0
+	sta robinladder
+	sta robinlook
+	sta runcount
+	lda #12
+	sta robinladdercounter
+	rts
+;---------------------------
+checkifstillonladderup
+	lda robinheight
+	add #4
+	tay
+	lda robinxl
+	ldx robinxh
+	jsr findsolid
+	lda solidfound
+	sta temp5
+	cmp #1
+	beq !1
+	cmp #0
+	bne !2
+	ldy robiny
+	cpy #&24
+	bcc !1
+	dey
+	dey
+	lda robinxl
+	ldx robinxh
+	jsr findsolid
+	lda solidfound
+	cmp #1
+	beq !1
+	cmp #0
+	bne stepoffladderup
+;	lda robinheight	
+;	add #4
+;	tay
+;	lda robinxl
+;	ldx robinxh
+;	jsr findsolid
+	lda temp5
+	lda solidfound
+	cmp #1
+	beq !1
+	dec robiny
+	dec robiny
+	jmp stepoffladderup 
+!1	lda pad
+	and #umask
+	beq !2
+	dec robiny
+!2	rts
+;---------------------------
+checkforladderdown
+	lda robinladdercounter
+	bne !1
+	ldy robiny
+	iny	
+	iny
+	iny	
+	iny
+	lda robinxl
+	ldx robinxh
+	jsr findsolid
+	lda solidfound
+	cmp #1
+	bne !1
+	inc robiny
+	inc robiny
+	inc robiny
+	jmp setonladder
+!1
+	lda robinjumping
+	bne !2
+	
+;	lda debounce
+;	and #dmask
+;	bne !2
+	lda #-7
+	sta robincrouch
+!2	rts
+
+;----------------------------
+checkforladderup
+	lda pad
+	and #umask
+	beq checkladupend
+	lda robinladdercounter
+	bne checkladupend
+	lda robincrouch			;;;;;;
+	bne checkladupend			;;;;;;
+	lda robinheight
+	add #4
+	tay
+	lda robinxl
+	ldx robinxh
+	jsr findsolid
+	cmp #1
+	bne checkladupend
+	dec robiny
+setonladder	jsr setonladdervars
+
+
+	jmp onladder
+checkladupend
+	rts
+setonladdervars
+	lda #0
+	sta runcount
+	sta robinjumping
+	lda #4 
+	sta robinladder
+	lda #1
+	sta robingravity
+	rts
+
+;----------------------------
+docrouchstuff
+	lda robinjumping
+	bne !5
+	lda robincrouch
+	beq !5
+	ldx robincrouch
+	cpx #-4
+	bne !6
+	lda pad
+	and #dmask
+	bne !4     ;!2
+!6	lda counter
+	and #3
+	bne !1
+	inc robincrouch
+!1	lda robinheight
+	pha
+	lda robiny
+	add #-16
+	sta robinheight
+	jsr movebackcrouchedunder
+	pla
+	sta robinheight
+	rts
+!5	lda pad
+	and #dmask
+	beq !4
+	jsr checkforladderdown
+!4	rts
+;---------------------------------------
+dofiring	lda robincrouch
+	bne !3
+	lda robinfiring
+	bne !1
+	lda pad
+	and #bmask
+	beq !3
+	lda #9*4+3
+	sta robinfiring
+	rts
+!1	cmp #3*4
+	bne !4
+!2	lda pad
+	and #bmask
+	bne !3
+!4	dec robinfiring
+	lda robinfiring
+	cmp #4*3-1
+	bne !3
+	jsr robinshootarrow
+	lda #youfiringfx
+	jsr soundfx
+!3	rts
+
+;---------------------------------------
+animatelegs	lda robinjumping
+	bne !5
+	lda orobinxl
+	lsr
+	lsr
+	sta temp
+	lda robinxl
+	lsr
+	lsr
+	cmp temp
+	beq !4
+	and #1
+	bne !4
+	inc robinanim
+	lda robinanim
+	and #7
+	tax
+!3	stx robinanim
+!4	rts
+!5	ldx #2
+	lda runcount
+	cmp #9
+	bcc !1
+	ldx #1
+	cmp #24
+	bcc !1
+	ldx #12
+!1	stx robinanim
+	rts
+;---------------------------
+restorex 	lda #0
+	sta leftright
+restorex1
+	lda runcount
+	cmp #1
+	bcc !1
+	lda #1
+	sta runcount
+!1	move.w orobinxl,robinxl
+	rts
+;---------------------------
+dogravity	lda robingravity
+	cmp #128
+	bne !9
+	rts
+!9	lda robingravity
+	bmi !4
+	cmp #&18
+	bcs !3
+!4	inc robingravity
+!3	lda robingravity
+	sta temp
+	asl temp
+	ror
+	asl temp
+	ror
+	add robiny
+	sta robiny
+	lda robingravity
+	bmi !1
+	lda #2
+	ldx robincrouch
+	beq !10
+	lda #3
+!10	sta temp5
+	jsr findfloor
+	lda blockfound
+	sta robinbehind
+	lda solidfound
+	cmp temp5
+	bcc !1
+	lda robiny
+	add #-8
+	sta robiny
+	jsr findfloor
+	php
+	lda robiny
+	add #8
+	sta robiny
+	plp
+	beq !2
+	jsr restorex1
+	jmp !6
+!2	dec robiny
+	jsr findfloor
+	beq !6
+	lda leftright
+	beq !2
+	bmi !7
+	jsr findwallright
+	beq !2
+	jmp !8
+!7	jsr findwallleft
+	beq !2
+!8	jsr restorex1
+	jmp !2
+!6	lda #0
+	sta robinjumping
+	lda pad
+	and #255-dmask
+	sta pad
+	lda robingravity
+	bmi !5
+	cmp #&16
+	bcc !5
+	lda #-7
+	sta robincrouch
+!5	lda #128
+	sta robingravity	
+!1	rts
+;---------------------------
+dorobinjumping
+	lda robingravity
+	cmp #128
+	bne !bugwashere
+	lda #0
+	sta robingravity
+!bugwashere
+
+	lda robincrouch
+	beq !3
+	inc robincrouch
+	rts	
+!3
+	jsr addleftright
+	bit robingravity
+	bpl !1
+	lda robinbehind
+	beq !2	
+	ldy robiny
+	ldx robinxh
+	lda robinxl
+	jsr findblock
+	sta robinbehind
+!2	jsr findroof
+	bne !1
+	lda orobiny
+	sta robiny
+;	lda #0
+;	sta robingravity
+
+!1	
+		;check if hit wall while jumping
+	lda runcount 
+	beq notjumpingleftorright
+	lda leftright
+	bpl jumpingright
+	jsr findwallleft
+	beq notjumpingleftorright
+	lda orobinxl
+	and #%11111000
+	sta orobinxl
+	jmp restorex1
+	
+jumpingright
+	jsr findwallright
+	beq notjumpingleftorright
+	lda orobinxl
+	dca
+	and #%11111000
+	add #7
+	sta orobinxl
+	jmp restorex1
+
+notjumpingleftorright
+	rts
+;---------------------------
+addleftright	lda robinjumping
+	bne restleftright
+addleftright1
+	lda leftright
+	beq !2
+	cmp oleftright
+	bne !2
+	inc runcount
+	lda runcount
+	cmp #48
+	bne !3
+	lda #47
+	sta runcount
+!1	jmp !3
+
+!2	lda runcount
+	beq !3
+	lda robincrouch
+	bne !8
+	lsr runcount
+	jmp !3
+!8	lda counter
+	and #3
+	beq !3
+	dec runcount
+!3	
+restleftright
+	ldx runcount
+	bne !11
+	rts
+!11	ldy #1
+	cpx #&2f
+	bne !9
+	iny
+!9	lda oleftright
+	bmi !4
+!6	lda runtablelo,x
+	add robindx
+	sta robindx
+	tya
+	adc robinxl
+	sta robinxl
+	bcc !5
+	inc robinxh
+!5	rts
+!4	sty temp
+	lda robindx
+	sec
+	sbc runtablelo,x
+	sta robindx
+	lda robinxl
+	sbc temp
+	sta robinxl
+	bcs !8
+	dec robinxh
+	rts
+!8	lda robinxh
+	bne !7
+	lda #12
+	cmp robinxl
+	bcc !7
+	lda mapno
+	cmp #5
+	bne !17
+	lda #5
+	sta mapno
+	lda #&f4
+	sta robiny	
+	lda #8
+	sta scrxh 
+	sta robinxh
+	sta orobinxh
+	lda #&78
+	sta robinxl
+	sta orobinxl
+
+	lda #0
+	sta scrxl
+	sta treasures
+	sta treasures+1
+	sta treasures+2
+	rts
+!17	jmp restorex
+!7	rts
+
+runaccel	= 256/48
+runcounter	= 0
+runtablelo	do 47
+	defb runcounter
+runcounter	= runcounter+runaccel
+	loop
+	defb 0
+;---------------------------
+manwidth	equ 8
+findwallleft	lda robinxl
+	sec
+	sbc #manwidth+1
+	sta temp8
+	lda robinxh
+	sbc #0
+restwall	tax
+	stx temp9
+	lda robiny
+	sec
+	sbc #8-2
+	add robinladder
+	tay
+	lda temp8
+	jsr findsolid
+;	lda solidfound
+	cmp #3
+	beq !notequal
+	lda robincrouch
+	bne !equal
+	ldx temp9
+	lda robiny
+	sec
+	sbc #21 ;16
+	tay
+	lda temp8
+	jsr findsolid
+;	lda solidfound
+	cmp #3
+	bne !equal
+!notequal	lda #1
+	rts
+!equal	lda #0
+	rts
+;---------------------------
+findwallright lda robinxl
+	add #manwidth+1
+	sta temp8
+	lda robinxh
+	adc #0
+	jmp restwall
+;---------------------------
+findfloor	ldy robiny
+	ldx robinxh
+	lda robinxl
+	sec
+	sbc #4  ;5
+	bcs !3
+	dex	
+!3	jsr findsolid
+	lda solidfound
+	sta temp9
+	ldy robiny
+	ldx robinxh
+	lda robinxl
+	add #4	;5
+	bcc !4
+	inx	
+!4	jsr findsolid
+	lda temp9
+	cmp solidfound
+	bcs !6
+	lda solidfound
+!6	sta solidfound
+	and #2
+	bne !1
+	lda robinjumping
+	bne !2
+	lda solidfound	;check for ladder
+	cmp #1
+	bne !2
+!5	lda #1
+	rts
+!2	lda #0
+!1	rts
+;---------------------------
+findroof	lda #-manwidth+3
+	jsr findroofleft
+	beq !2
+	lda #manwidth-3
+	jmp findroofright
+!2	rts
+;---------------------------
+findroofleft	add robinxl
+	ldy robinheight
+	ldx robinxh
+	bcs !1
+	dex
+!1	jsr findsolid
+	cmp #3
+	rts
+;---------------------------
+findroofright
+	add robinxl
+	ldy robinheight
+	ldx robinxh
+	bcc !2
+	inx
+!2	jsr findsolid
+	cmp #3
+	rts
+;---------------------------
+movebackcrouchedunder
+	lda robincrouch
+	cmp #-4
+	bcc endcrouch
+	bit oleftright
+	bmi slidingneg
+	lda #manwidth-2
+	jsr findroofright
+	beq slidebackright
+	lda #-manwidth+2
+	jsr findroofleft
+	bne !1
+	incr robinxl
+	jmp setcrouch
+!1
+	lda #manwidth-2 ;;
+	jsr findroofright
+	bne endcrouch
+slidebackright
+	decr robinxl
+	jmp setcrouch
+slidingneg
+	lda #-manwidth+2
+	jsr findroofleft
+	beq slidebackleft
+	lda #manwidth-2
+	jsr findroofright
+	bne !1
+	decr robinxl
+	jmp setcrouch
+!1	lda #-manwidth+2  ;;
+	jsr findroofleft
+	bne endcrouch
+slidebackleft
+	incr robinxl
+setcrouch	lda #-4
+	sta robincrouch
+endcrouch	rts
+;---------------------------
+;findstepleft	lda robinxl
+;	sec
+;	sbc #manwidth-4
+;	pha
+;	lda robinxh
+;	sbc #0
+;reststep	tax
+;	ldy robiny
+;	pla
+;	jsr findsolid
+;	cmp #3
+;	rts
+;---------------------------
+;findstepright lda robinxl
+;	add #manwidth-4
+;	pha
+;	lda robinxh
+;	adc #0
+;	jmp reststep
+;---------------------------
+;checkandstore
+;	lda robingravity
+;	cmp #128
+;	bne dontstoreold
+;	lda runcount
+;	bne dontstoreold
+	
+storeoutoldrobin
+	lda robinladder
+	sta oldladder
+	lda robinxl
+	sta oldxl
+	lda robinxh
+	sta oldxh
+	lda robiny
+	sta oldy
+dontstoreold	rts
+
+restoreoldrobin
+	lda oldladder
+	sta robinladder
+	lda oldxl
+	sta robinxl
+	lda oldxh
+	sta robinxh
+	lda oldy
+	sta robiny
+	lda #128
+	sta robingravity
+	rts
+
+
+;---------------------------
+	if testpause=1
+moverobinaround
+	lda pause
+	beq !5
+	ldx #0
+	lda pad
+	and #lmask
+	beq !1
+	add16toval robinxl,-8,robinxl
+	inx
+!1	lda pad
+	and #rmask
+	beq !2
+	add16toval robinxl,8,robinxl
+	inx
+!2	lda pad
+	and #umask
+	beq !3
+	lda robiny
+	add #-4
+	sta robiny
+	inx
+!3	lda pad
+	and #dmask
+	beq !4
+	lda robiny
+	add #4
+	sta robiny
+	inx
+!4	
+	cpx #0
+	beq !5
+	lda #bmask
+	sta pad
+	lda #0
+	sta debounce
+!5	rts
+	endif
+;---------------------------
+checkrobinbehind
+	ldx #0
+	lda robinbehind
+	cmp #&f8
+	bcs !2
+	cmp #&f4
+	bcc !2
+	beq !1
+	lda #0
+	sta robininvinc
+	sta killed
+!4
+;	jsr killyoutotally
+	lda #3
+	jsr subfromhearts1 ;stepped in lava
+!1	lda runcount
+	beq !3
+	lda #1
+	sta runcount
+!3	ldx #32
+!2	stx spritebehind
+	rts
+;------------------------------
+
+
+

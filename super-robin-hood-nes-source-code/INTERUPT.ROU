@@ -1,0 +1,191 @@
+
+
+
+cm_nmi
+	if absolutely=1
+	bit cm_flags
+	bmi interupt
+	inc cm_frames
+	bit $2002
+	rti
+	endif
+interupt				;;;do all sending of chrs etc 1st
+	pha
+	txa
+	pha
+	tya
+	pha
+	lda interon
+	beq dontdointerupt
+
+	lda finishedloop
+	bne !1
+	jsr fadeupcolours
+	jsr emptyprintbuffer
+!1	jsr emptyblockbuffer
+
+
+	lda x.scroll
+	sta _scrollcon
+	lda y.scroll
+	sta _scrollcon
+	lda control0
+	sta _control0
+	lda control1
+	sta _control1
+
+	lda finishedloop
+	bne !4
+	jsr sendspriteblock
+!4
+	jsr dointerpause
+
+	if analyzeon=1
+	jsr analyze
+	endif
+	jsr readkeypads
+
+	if musicon=1
+	lda #13
+	sta bank.tbl+13
+	jsr fx_play
+	lda bankno
+	jsr changebankrou1
+	endif
+dontdointerupt
+	if musicon=1
+	lda pause
+	bne !1	
+	lda #13
+	sta bank.tbl+13
+	jsr play_music
+	lda bankno
+	jsr changebankrou1
+!1
+	endif
+
+	pla
+	tay
+	pla
+	tax
+
+	lda #128
+	sta flyflag
+	pla
+	rti		;supposed exit from interupt service
+;------------------------------
+;-----
+dointerpause
+	if testpause=1	
+	zvar pause1,1
+
+	lda pause
+	beq !2
+	lda pad
+	and #bmask
+	beq !3
+	lda debounce
+	and #bmask
+	bne !3
+	lda #0
+	sta pause
+	lda #1
+	sta pause1
+	sta dontpause
+	jmp !3
+!2	lda pause1
+	beq !3
+	lda #0
+	sta pause1
+	sta dontpause
+	lda #1
+	sta pause
+
+!3
+	endif
+
+	lda pause
+	bne inpausemode
+pausenoton	
+	lda finishedloop
+	bne !1
+	inc counter
+;	lda counter
+;	and #3
+;	bne !2
+;	inc clock
+!2
+	jsr clearspriteblock
+	jsr random
+!1
+inpausemode
+	rts
+;---
+
+
+**********************************************************************
+setfade	stx address
+	sty address+1
+	lda #3
+	sta fadecounter
+	ldy #0
+!1	lda (address),y
+	sta fadecolours,y
+	iny
+	cpy #32
+	bne !1
+	ldy #0
+	jmp allblack
+
+
+fadeupcolours
+	lda fadecounter
+	beq endfade
+	ldx #&3f
+	stx _vramaddr
+	ldy #0
+	sty _vramaddr
+	cmp #0
+	bmi backtoblack
+	tax
+	lda fademasks,x
+	sta fadetemp
+	lda fadecounter
+	beq dofadelp
+	dec fadecounter
+dofadelp	lda fadecolours,y
+	and fadetemp
+	sta _vramdata
+	iny
+	cpy #32
+	bne dofadelp	
+endfade	rts
+
+backtoblack
+	inc fadecounter
+	lda fadecounter
+	cmp #255
+	beq allblack1
+	nega
+	tax
+	lda fade1masks,x
+	sta fadetemp
+	jmp dofadelp
+allblack
+	flybackvar
+	ldx #&3f
+	stx _vramaddr
+	ldy #0
+	sty _vramaddr
+allblack1
+	lda #&e
+allblacklp	sta _vramdata
+	iny
+	cpy #32
+	bne allblacklp
+	rts
+
+fademasks	defb 255,%00111111,%00011111,%00001111
+fade1masks	defb 0,%00001111,%00011111,%00111111
+
+

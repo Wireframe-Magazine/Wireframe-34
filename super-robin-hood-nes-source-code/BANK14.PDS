@@ -1,0 +1,24 @@
+
+ED14
+b14	equ &BFFF-ED14
+	free b14
+	LIST ON
+BANK14 DEFB <B14,>B14 ;general character sets
+	LIST OFF
+
+endofbank14	if endofbank14>&c001
+	error "game bank 14 overflowed
+	endif
+
+	bank 14
+	org &c004
+	jmp pastnops
+	jmp cm_nmi
+
+
+bank_table	
+banktable
+bank.tbl	defb 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+
+
+

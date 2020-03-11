@@ -1,0 +1,80 @@
+
+		
+
+;chrset for title screen
+;0 	space
+;1-31	A-Z !?".:
+;32	space dark blue
+;33-42	0-9
+;43-125	bmxlogo
+;126-145	simluator
+;146-181	codemasters  
+;182-201	camerica
+;202-208	paddle
+;209-220	large 1,2,3
+;220-
+
+collisionchr	hex 0e0080  ;0fff ;
+solidcollisionchr
+	hex 0fff
+alphachrs
+hiscorechrs	;70 chrs  at 0
+
+	incbin hiscore.pp1
+
+;	incbin chrset.pp1
+;
+;	hex 0f00		;space
+;	HEX 873C7E667E66666600FF	;A
+;	HEX 877C7E667C66667C00FF	;B
+;	HEX 873C7E626060623C00FF	;C
+;	HEX 877C7E666666667C00FF	;D
+;	HEX 877E7E607C60607E00FF	;E
+;	HEX 877E7E607C60606000FF	;F
+;	HEX 873E7E606E66663E00FF	;G
+;	HEX 876666667E66666600FF	;H
+;	HEX 873C3C181818183C00FF	;I
+;	HEX 873C3C0C0C6C6C3800FF	;J
+;	HEX 87666C7870786C6600FF	;K
+;	HEX 876060606060607E00FF	;L
+;	HEX 87C6EEFED6C6C6C600FF	;M
+;	HEX 87C6E6F6DECEC6C600FF	;N
+;	HEX 873C7E666666663C00FF	;O
+;	HEX 877C7E66667C606000FF	;P
+;	HEX 873C7E6666666C3600FF	;Q
+;	HEX 877C7E667C786C6600FF	;R
+;	HEX 873E7E603C06067C00FF	;S
+;	HEX 877E7E181818181800FF	;T
+;	HEX 876666666666663C00FF	;U
+;	HEX 8766666666243C1800FF	;V
+;	HEX 87C6C6C6D6FEEEC600FF	;W
+;	HEX 87C6EE7C38386CC600FF	;X
+;	HEX 8766663C1818181800FF	;Y
+;	HEX 877E7E0C1830607E00FF	;Z
+;	HEX 871818181800181800FF	;!
+;	HEX 873C66660C00181800FF	;?
+;	HEX 871038FE7C386C4400FF	;*
+;	HEX 870000000000181800FF	;.
+;	HEX 870018180018180000FF	;:
+;
+;solidchr	incbin solidchr.pp1
+;	hex 1eff00
+
+;-----------------------------------------------------------
+titletopchrs incbin topchrs.pp1
+titlebotchrs	incbin botchrs.pp1
+;---------------------------------------------------------
+robinchrs	incbin robinchr.pp1
+;----------------------------------------------
+basechr	incbin basechr.pp1
+beadchr	incbin beadchr.pp1
+boxchr	incbin boxchr.pp1
+archchr	incbin archchr.pp1
+rockchr	incbin rockchr.pp1
+bedchr	incbin bedchr.pp1
+doorchr	incbin doorchr.pp1
+
+okchr	incbin okchr.pp1
+
+
+

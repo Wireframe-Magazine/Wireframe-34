@@ -1,0 +1,18 @@
+
+ED12
+b12	equ &c000-ED12
+	free b12
+	LIST ON
+BANK12 DEFB <B12,>B12 ;maps and data
+	LIST OFF
+	
+
+endofbank12	if endofbank12>&c002
+	error "game bank 12 overflowed
+	endif
+
+	bank 12
+
+	org &8000
+
+

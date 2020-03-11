@@ -1,0 +1,17 @@
+
+ED13
+b13	equ &c000-ED13
+	free b13
+	LIST ON
+BANK13 DEFB <B13,>B13 ;title/hiscore/music/soundfx
+	LIST OFF
+
+
+endofbank13	if endofbank13>&c001
+	error "game bank 13 overflowed
+	endif
+
+	bank 13
+	org &8000
+
+

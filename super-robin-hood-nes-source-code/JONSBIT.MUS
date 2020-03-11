@@ -1,0 +1,625 @@
+
+	if musicon=1
+
+;gav_MASTER	ASK "Master version
+
+gav_master = 1
+
+****************** gav's bit *******************
+
+testpds	= $fff2
+;breakpoint	= $ffed
+;analyze	= $ffe4
+
+_status0	equ $2000
+_status1	equ $2001
+
+	org 2
+
+status0	ds 1,0
+status1	ds 1,0
+
+	IF gav_MASTER = 0
+
+AD1	= $E0
+
+VERSION	= $DF	; ntsc
+
+
+zero_top
+
+	org $200
+
+spreal	ds 256,0
+
+	ENDIF
+
+ram_top
+
+************************************************
+
+
+
+	IF gav_master = 0
+
+
+;MUSICED 6502 music driver - by Jon Menzies
+
+	SEND COMPUTER1
+	OPTION 0,0
+
+;** macros
+
+DJ	MACRO
+	ORG *+(@1)
+	ENDM
+
+
+
+
+;** zero page **
+
+	ORG 1
+
+TEMP1	DJ 1
+PDS_FLAGS	DJ 1
+
+;** workspace **
+
+	ORG $600
+
+VOICE	DJ 4
+
+DURATION	DJ 4
+
+VOLUME	DJ 4
+
+FREQ_LO	DJ 4
+FREQ_HI	DJ 4
+OLD_FREQHI	DJ 4
+
+TINNY_TONE	DJ 4
+TINNY_WAIT	DJ 4
+
+REVERB_COUNT	DJ 4
+
+ENV_PHASE	DJ 4
+
+
+;** code starts here **
+
+	ORG $C004
+
+SYSTEM	JMP SYSTEM2
+
+BANKBITS	DB 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+
+;*****  Main Code  *****
+
+SYSTEM2
+
+;sys init
+	SEI
+	CLD
+	LDX #$FF
+	TXS
+
+	LDA #$00
+	STA $2000
+	STA $2001
+
+	VRAM $3F00
+	LDA #13
+	STA $2007
+	VRAM $3EFF
+	SETBANK 0
+	LDA #1
+	JSR START_MUSIC
+
+;clear zpage & music workspace page
+
+;	LDX #0
+;	TXA
+;
+;!CZP	STA 0,X
+;	STA $600,X
+;	INX
+;	BNE !CZP
+
+;init pds flags
+
+	LDA $C002
+	STA PDS_FLAGS
+
+;sound enables
+
+	LDA #$F
+	STA $4015
+
+	LDA #$00
+	LDX #$13
+!14	STA $4000,X
+	DEX
+	BPL !14
+
+;NMI on
+	LDA #$80
+	STA $2000
+
+LOOP
+;get command byte from pds
+
+	JSR GET_BYTE
+
+	LDX #0
+	STX $4015
+
+	CMP #136
+	BEQ SEND_ABSADR
+	CMP #137
+	BEQ WHOLE_SONG
+	CMP #138
+	BEQ PLAY_SONG
+	CMP #139
+	BEQ SEND_NOTE
+
+	JMP LOOP
+
+SEND_ABSADR
+	JSR PORTS_OUT
+	LDA #<INDEX
+	JSR SEND_BYTE
+	LDA #>INDEX
+	JSR SEND_BYTE
+	JSR PORTS_IN
+
+	JMP LOOP
+
+
+WHOLE_SONG
+	JSR IRQOFF
+	NEXUS_RAM
+;size of data
+	JSR GET_BYTE
+	STA TEMPA
+	JSR GET_BYTE
+	STA TEMPA+1
+	LDA #0
+	STA TEMPB
+	STA TEMPB+1
+
+	LDY #0
+	LOW INDEX
+	STA TEMPC
+	HIGH INDEX
+	STA TEMPC+1
+!2
+;get data
+	JSR GET_BYTE
+	STA (TEMPC),Y
+
+	INY
+	BNE !3
+	INC TEMPC+1
+!3
+	INC TEMPB
+	BNE !1
+	INC TEMPB+1
+!1
+	LDA TEMPB
+	CMP TEMPA
+	BNE !2
+	LDA TEMPB+1
+	CMP TEMPA+1
+	BNE !2
+
+	NEXUS_ROM
+	JSR IRQON
+	JMP LOOP
+
+PLAY_SONG
+	JSR IRQOFF
+	JSR GET_BYTE
+	JSR START_MUSIC
+	JSR IRQON
+	JMP LOOP
+SEND_NOTE
+	JSR IRQOFF
+	JSR IRQON
+	JMP LOOP
+
+
+
+IRQOFF	LDA STATUS0
+	AND #63	;127	;HMMMMMM.......
+	STA STATUS0
+	STA _STATUS0
+	RTS
+
+IRQON	LDA STATUS0
+	ORA #128
+	STA STATUS0
+	STA _STATUS0
+	RTS
+
+
+
+
+
+
+
+
+
+
+;jons bit....
+**************************************************************************
+	CMP #$37
+	;BNE LOOP
+
+;make some noise
+
+	NEXUS_RAM
+
+;channel
+	JSR GET_BYTE
+	TAY
+
+	LDA #$FF
+	STA VOICE,Y
+	STA OLD_FREQHI,Y
+
+;envelope start, attack, peak, decay, sustain
+
+	JSR GET_BYTE
+	STA VOLUME,Y
+
+	JSR GET_BYTE
+	STA ATTACK
+	JSR GET_BYTE
+	STA PEAK
+	JSR GET_BYTE
+	STA DECAY
+	JSR GET_BYTE
+	STA SUSTAIN
+
+;reverb
+	JSR GET_BYTE
+	STA REVERB_MAX
+
+;tinnytone start, delay, end
+
+	JSR GET_BYTE
+	STA TINNY_TONE,Y
+
+	JSR GET_BYTE
+	STA TINNY_DELAY
+	STA TINNY_WAIT,Y
+
+	JSR GET_BYTE
+	STA TINNY_END
+
+;pitch
+	JSR GET_BYTE
+	TAX
+
+	LDA TABLO,X
+	STA FREQ_LO,Y
+	LDA TABHI,X
+	STA FREQ_HI,Y
+
+;duration
+	JSR GET_BYTE
+	STA DURATION,Y
+
+;
+
+	LDA #0
+	STA REVERB_COUNT,Y
+	STA ENV_PHASE,Y
+
+	STA VOICE,Y
+
+	NEXUS_ROM
+
+;next
+	JMP LOOP
+
+;end of jons bit....
+**************************************************************************
+
+
+
+
+
+
+
+
+;** NMI **
+
+NMI	PHA
+	TXA
+	PHA
+	TYA
+	PHA
+
+	INC gav_COUNTER
+
+	LDY #4
+	LDX #0
+!2	DEX
+	BNE !2
+	DEY
+	BNE !2
+
+	BWON
+
+	SETBANK 0
+	JSR $8004
+
+	BWOFF
+
+	;;;JSR TESTPDS
+
+	LDA $2002
+
+	PLA
+	TAY
+	PLA
+	TAX
+	PLA
+
+	RTI
+
+
+CHANNEL_ADR	HEX 0004080C
+
+TINNY_TABLE	HEX 3070B070
+
+
+
+;*****  PDS link  *****
+
+;** get byte **
+
+GET_BYTE
+!WAIT	LDA $C002
+	EOR PDS_FLAGS
+	AND #2
+	BEQ !WAIT
+
+	LDX $C000
+	LDA PDS_FLAGS
+	EOR #3
+	STA $C002
+	STA PDS_FLAGS
+	TXA
+	RTS
+
+
+;** send byte **
+
+SEND_BYTE
+	STA $C000
+	LDA PDS_FLAGS
+	EOR #3
+	STA $C002
+	STA PDS_FLAGS
+
+!WAIT	LDA $C002
+	EOR PDS_FLAGS
+	AND #2
+	BNE !WAIT
+
+	RTS
+
+
+;** swap ports to out **
+
+PORTS_OUT
+!WAIT	LDA $C002
+	EOR PDS_FLAGS
+	AND #2
+	BEQ !WAIT
+
+	LDA PDS_FLAGS
+	EOR #2
+	STA PDS_FLAGS
+
+	LDA $C003
+	ORA #$10
+	STA $C003
+
+	RTS
+
+
+;** swap ports to in **
+
+PORTS_IN
+	LDA $C003
+	AND #$EF
+	STA $C003
+
+	LDA PDS_FLAGS
+	EOR #1
+	STA $C002
+	STA PDS_FLAGS
+
+	RTS
+
+
+
+;*****  music stuff  *****
+
+
+;** update channel **
+
+UPDATE
+	;X=channel (0..3)
+
+;* abort if voice=$ff *
+
+	LDA VOICE,X
+	BPL !OK
+
+	RTS
+!OK
+
+;* update duration *
+	DEC DURATION,X
+	BNE !4
+
+	LDY CHANNEL_ADR,X
+
+	LDA #$30
+	STA $4000,Y
+	LDA #$FF
+	STA VOICE,X
+
+	RTS
+!4
+
+;* voice index into Y *
+
+	LDY VOICE,X
+
+;* update envelope *
+
+	LDA ENV_PHASE,X
+	BEQ !ATTACK
+
+	LSR
+	BCC !SUSTAIN
+
+;decay
+	LDA VOLUME,X
+	SEC
+	SBC DECAY,Y
+	BCC !50
+
+	CMP SUSTAIN,Y
+	BCS !VOL
+
+!50
+	LDA SUSTAIN,Y
+	JMP !PHASE
+
+;attack
+!ATTACK
+	LDA VOLUME,X
+	CLC
+	ADC ATTACK,Y
+	BCS !60
+
+	CMP PEAK,Y
+	BCC !VOL
+!60
+	LDA PEAK,Y
+
+!PHASE	INC ENV_PHASE,X
+!VOL	STA VOLUME,X
+
+;done vol
+
+!SUSTAIN
+
+
+;* update tinnytone *
+
+;count frames between tinny update
+
+	LDA TINNY_DELAY,Y
+	BEQ !51
+	DEC TINNY_WAIT,X
+	BPL !TINNYDONE
+	STA TINNY_WAIT,X
+!51
+
+;inc tinny_tone if not at tinny_end
+
+	LDA TINNY_TONE,X
+	CMP TINNY_END,Y
+	BEQ !TINNYDONE
+
+	CLC
+	ADC #1
+	AND #3
+	STA TINNY_TONE,X
+
+;leave tinny be
+
+!TINNYDONE
+
+;* update reverb *
+
+	DEC REVERB_COUNT,X
+	BPL !81
+	LDA REVERB_MAX,Y
+	STA REVERB_COUNT,X
+!81
+
+
+;* put it all together *
+
+;volume
+	LDA VOLUME,X
+	LSR
+	LSR
+	LSR
+	LSR
+
+	STA TEMP1
+
+;reverb mask
+
+	LDA REVERB_COUNT,X
+	ASL
+	CMP REVERB_MAX,Y
+
+	LDA TEMP1
+	BCS !RV_ON
+	AND #$F0
+!RV_ON
+
+;tinnytone
+	LDY TINNY_TONE,X
+	ORA TINNY_TABLE,Y
+
+;store reg 0
+
+	LDY CHANNEL_ADR,X
+
+	STA $4000,Y
+
+;pitch (regs 2 & 3)
+
+	LDA FREQ_LO,X
+	STA $4002,Y
+
+	LDA FREQ_HI,X
+	CMP OLD_FREQHI,X
+	BEQ !300
+
+	STA $4003,Y
+	STA OLD_FREQHI,X
+!300
+
+;* done *
+
+	RTS
+
+
+;** voice data **
+
+REVERB_MAX	DJ 53
+TINNY_END	DJ 53
+TINNY_DELAY	DJ 53
+
+ATTACK	DJ 53
+DECAY	DJ 53
+PEAK	DJ 53
+SUSTAIN	DJ 53
+
+
+	ENDIF
+	endif
+
